@@ -367,9 +367,17 @@ function renderStory(section) {
         .map((item) => {
           const layout = item.layout || baseLayout;
           const layoutClass = layout === "image-right" ? "image-right" : layout === "centered" ? "centered" : "";
+          const imageStyle = [
+            `--story-image-height:${Number(item.imageHeight || 620)}px`,
+            `--story-image-fit:${item.imageFit || "cover"}`,
+            `--story-image-position:${item.imagePosition || "center center"}`,
+            item.imageRatio ? `--story-image-ratio:${item.imageRatio}` : "",
+          ]
+            .filter(Boolean)
+            .join(";");
           return `
             <article class="story-block ${layoutClass} reveal">
-              <div class="story-block__image">
+              <div class="story-block__image" style="${escapeHtml(imageStyle)}">
                 <img src="${escapeHtml(item.image)}" alt="${escapeHtml(t(item.alt))}" loading="lazy">
               </div>
               <div class="story-block__copy">
@@ -903,6 +911,10 @@ function renderContentAdmin() {
               ${localizedInputs("Metin", `sections.${story.index}.items.${itemIndex}.text`, item.text, true)}
               ${select("Layout", `sections.${story.index}.items.${itemIndex}.layout`, item.layout || "image-left", ["image-left", "image-right", "centered"])}
               ${mediaSelect("Bölüm görseli", `sections.${story.index}.items.${itemIndex}.image`, item.image)}
+              ${select("Görsel oranı", `sections.${story.index}.items.${itemIndex}.imageRatio`, item.imageRatio || "auto", ["auto", "16 / 9", "4 / 3", "1 / 1", "4 / 5", "3 / 4"])}
+              ${rangeInput("Görsel yüksekliği", `sections.${story.index}.items.${itemIndex}.imageHeight`, item.imageHeight ?? 620, 220, 820)}
+              ${select("Görsel sığdırma", `sections.${story.index}.items.${itemIndex}.imageFit`, item.imageFit || "cover", ["cover", "contain"])}
+              ${select("Görsel pozisyonu", `sections.${story.index}.items.${itemIndex}.imagePosition`, item.imagePosition || "center center", ["center center", "top center", "bottom center", "left center", "right center"])}
               ${localizedInputs("Alt metin", `sections.${story.index}.items.${itemIndex}.alt`, item.alt)}
             </div>
           </div>
@@ -1341,6 +1353,10 @@ adminContent.addEventListener("click", async (event) => {
       image: state.media[0]?.path || "assets/images/hero-aegean-escape.webp",
       alt: { tr: "Paska Otel deneyimi", en: "Paska Hotel experience" },
       layout: "image-left",
+      imageRatio: "auto",
+      imageHeight: 620,
+      imageFit: "cover",
+      imagePosition: "center center",
     });
   }
   if (target.dataset.removeStory !== undefined) state.data.sections.find((section) => section.type === "story").items.splice(Number(target.dataset.removeStory), 1);

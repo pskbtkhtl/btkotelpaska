@@ -379,9 +379,12 @@ h2 {
 }
 
 .story-block__image {
-  min-height: clamp(420px, 64vw, 740px);
+  min-height: 0;
+  height: var(--story-image-height, clamp(420px, 64vw, 740px));
+  aspect-ratio: var(--story-image-ratio, auto);
   overflow: hidden;
   border-radius: var(--radius);
+  background: var(--sand);
   box-shadow: var(--shadow);
 }
 
@@ -436,6 +439,11 @@ h2 {
 .story-block__image img,
 .foca__image img {
   transition: transform 900ms var(--ease);
+}
+
+.story-block__image img {
+  object-fit: var(--story-image-fit, cover);
+  object-position: var(--story-image-position, center center);
 }
 
 .room-card:hover img,
@@ -1555,7 +1563,6 @@ textarea {
     max-width: none;
   }
 
-  .story-block__image,
   .foca__image {
     min-height: 58vh;
   }

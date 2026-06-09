@@ -125,8 +125,8 @@
       "items": [
         {
           "alt": {
-            "en": "Paska Hotel terrace with sea view",
-            "tr": "Deniz manzaralı Paska Otel terası"
+            "en": "Paska Hotel's room with sea view",
+            "tr": "Deniz manzaralı Paska Otel odası"
           },
           "text": {
             "en": "Every corner is shaped around clean lines, natural tones and an open feeling toward the sea.",
@@ -141,7 +141,11 @@
           "eyebrow": {
             "en": "Sea View",
             "tr": "Deniz Manzarası"
-          }
+          },
+          "imageRatio": "auto",
+          "imageHeight": 620,
+          "imageFit": "cover",
+          "imagePosition": "center center"
         },
         {
           "alt": {
@@ -161,7 +165,11 @@
           "eyebrow": {
             "en": "Pool & Jacuzzi",
             "tr": "Havuz & Jacuzzi"
-          }
+          },
+          "imageRatio": "auto",
+          "imageHeight": 620,
+          "imageFit": "cover",
+          "imagePosition": "center center"
         }
       ],
       "order": 30,
@@ -385,5 +393,5 @@
       "enabled": true
     }
   ],
-  "updatedAt": "2026-06-09T16:27:39.612Z"
+  "updatedAt": "2026-06-09T16:49:32.105Z"
 }
