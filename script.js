@@ -284,7 +284,7 @@ function brandMarkup(brand = state.data.brand || {}) {
   const name = brand.name ?? "Paska";
   const location = brand.location ?? "Otel Foça";
   return `
-    ${brand.logo ? `<img class="brand__logo" src="${escapeHtml(brand.logo)}" alt="${escapeHtml(name || "Paska Otel logosu")}">` : ""}
+    ${brand.logo ? `<img class="brand__logo" src="${escapeHtml(brand.logo)}" alt="${escapeHtml(name || "Paska Otel logosu")}" decoding="async">` : ""}
     ${name ? `<span class="brand__text">${escapeHtml(name)}</span>` : ""}
     ${location ? `<small>${escapeHtml(location)}</small>` : ""}
   `;
@@ -635,7 +635,7 @@ function mediaSelect(label, path, value, help = "") {
       <div class="media-choice">
         <span class="admin-field-label">${escapeHtml(label)}</span>
         <button class="media-choice__button" type="button" data-open-media-picker data-path="${escapeHtml(path)}">
-          ${image ? `<img src="${escapeHtml(image)}" alt="">` : `<span class="media-choice__empty">Görsel seçilmedi</span>`}
+          ${image ? `<img src="${escapeHtml(image)}" alt="" loading="lazy" decoding="async">` : `<span class="media-choice__empty">Görsel seçilmedi</span>`}
           <span class="media-choice__cta">Görsel seç</span>
         </button>
         ${help ? `<small>${escapeHtml(help)}</small>` : ""}
@@ -712,12 +712,7 @@ function renderMediaPicker() {
           ${
             state.media.length
               ? mediaToRender
-                  .map((file, index) => `
-                    <button class="media-picker__item ${file.path === current ? "is-selected" : ""}" type="button" data-pick-media="${state.media.indexOf(file)}">
-                      <img src="${escapeHtml(file.path)}" alt="${escapeHtml(file.name)}">
-                      <span>${escapeHtml(file.name)}</span>
-                    </button>
-                  `)
+                  .map((file) => mediaPickerItem(file, current))
                   .join("")
               : `<div class="media-picker__empty">Henüz seçilebilir görsel yok. Önce Medya sekmesinden görsel yükle.</div>`
           }
@@ -728,12 +723,21 @@ function renderMediaPicker() {
   `;
 }
 
+function mediaPickerItem(file, current) {
+  return `
+    <button class="media-picker__item ${file.path === current ? "is-selected" : ""}" type="button" data-pick-media="${state.media.indexOf(file)}">
+      <img src="${escapeHtml(file.path)}" alt="${escapeHtml(file.name)}" loading="lazy" decoding="async">
+      <span>${escapeHtml(file.name)}</span>
+    </button>
+  `;
+}
+
 function seoPreview() {
   const meta = state.data.meta || {};
   const image = absoluteAssetUrl(meta.ogImage || fallbackData.meta.ogImage);
   return `
     <div class="seo-preview">
-      <img src="${escapeHtml(image)}" alt="">
+      <img src="${escapeHtml(image)}" alt="" loading="lazy" decoding="async">
       <div>
         <span>Paylaşım önizlemesi</span>
         <strong>${escapeHtml(meta.title || fallbackData.meta.title)}</strong>
@@ -1026,7 +1030,7 @@ function renderUploadPanel() {
           const progress = Math.min(100, Math.max(0, Number(item.progress) || 0));
           const phase = item.phase || "uploading";
           const preview = item.preview
-            ? `<img src="${escapeHtml(item.preview)}" alt="${escapeHtml(item.name || "Upload preview")}">`
+            ? `<img src="${escapeHtml(item.preview)}" alt="${escapeHtml(item.name || "Upload preview")}" decoding="async">`
             : `<span>${escapeHtml((item.name || "IMG").slice(0, 3).toUpperCase())}</span>`;
           const phaseLabel = phase === "success" ? "Tamamlandı" : phase === "error" ? "Hata" : phase === "queued" ? "Sırada" : "Yükleniyor";
           return `
@@ -1081,7 +1085,7 @@ function renderMediaAdmin() {
             ? state.media
                 .map((file, index) => `
             <div class="media-item" data-media-index="${index}">
-              <img src="${escapeHtml(file.path)}" alt="${escapeHtml(file.name)}">
+              <img src="${escapeHtml(file.path)}" alt="${escapeHtml(file.name)}" loading="lazy" decoding="async">
               <small>${escapeHtml(file.path)}</small>
               <div class="media-actions">
                 <button class="button button--muted" type="button" data-copy-media="${index}">URL kopyala</button>
@@ -1460,8 +1464,21 @@ adminContent.addEventListener("scroll", (event) => {
   if (!panel || !state.mediaPicker) return;
   const nearBottom = panel.scrollTop + panel.clientHeight >= panel.scrollHeight - 160;
   if (!nearBottom || state.mediaPickerLimit >= state.media.length) return;
-  state.mediaPickerLimit = Math.min(state.mediaPickerLimit + 10, state.media.length);
-  renderAdmin();
+  const current = getValue(state.mediaPicker.path);
+  const from = state.mediaPickerLimit;
+  const to = Math.min(from + 10, state.media.length);
+  const grid = panel.querySelector(".media-picker__grid");
+  const more = panel.querySelector("[data-media-load-more]");
+  if (!grid) return;
+  grid.insertAdjacentHTML("beforeend", state.media.slice(from, to).map((file) => mediaPickerItem(file, current)).join(""));
+  state.mediaPickerLimit = to;
+  if (more) {
+    if (to >= state.media.length) {
+      more.remove();
+    } else {
+      more.textContent = `Kaydırdıkça daha fazla görsel yüklenecek · ${to}/${state.media.length}`;
+    }
+  }
 }, true);
 
 adminContent.addEventListener("pointerdown", (event) => {

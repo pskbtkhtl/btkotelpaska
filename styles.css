@@ -1079,6 +1079,8 @@ textarea {
   background: #fbf8f2;
   cursor: pointer;
   text-align: left;
+  content-visibility: auto;
+  contain-intrinsic-size: 190px 160px;
 }
 
 .media-picker__item:hover,
@@ -1488,6 +1490,8 @@ textarea {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fbf8f2;
+  content-visibility: auto;
+  contain-intrinsic-size: 190px 190px;
 }
 
 .media-item img {
