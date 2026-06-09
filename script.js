@@ -683,7 +683,7 @@ function renderMediaPicker() {
           <div>
             <p class="eyebrow">Medya Kütüphanesi</p>
             <h3>${escapeHtml(state.mediaPicker.label || "Görsel seç")}</h3>
-            <p>Yüklediğin Supabase görsellerinden birini seç veya buradan yeni görsel yükle.</p>
+            <p>Yüklediğin Supabase görsellerinden birini seç veya buradan yeni görsel yükle. Seçim yaptığında otomatik kaydedilir.</p>
           </div>
           <div class="media-picker__actions">
             <label class="button button--dark file-button">
@@ -1148,6 +1148,7 @@ function renderAdmin() {
 }
 
 function normalizeValue(value) {
+  if (typeof value === "string" && value.trim() === "") return "";
   if (value === "true") return true;
   if (value === "false") return false;
   if (/^-?\d+$/.test(value)) return Number(value);
@@ -1181,7 +1182,7 @@ async function loadMedia() {
   }
 }
 
-async function saveSite() {
+async function saveSite(message = "Supabase'e kaydedildi.") {
   if (!isAllowedAdmin()) throw new Error("Bu e-posta admin allowlist içinde değil.");
   state.data.updatedAt = new Date().toISOString();
   await supabaseRequest(`/rest/v1/site_documents?id=eq.${encodeURIComponent(supabaseDocumentId)}`, {
@@ -1196,7 +1197,7 @@ async function saveSite() {
   }).catch(() => {});
   renderSite();
   renderAdmin();
-  showAdminMessage("Supabase'e kaydedildi.");
+  showAdminMessage(message);
 }
 
 async function uploadMediaFiles(files) {
@@ -1305,6 +1306,11 @@ adminContent.addEventListener("click", async (event) => {
       setValue(state.mediaPicker.path, file.path, { render: true });
       state.mediaPicker = null;
       renderAdmin();
+      try {
+        await saveSite("Görsel seçildi ve Supabase'e kaydedildi.");
+      } catch (error) {
+        showAdminMessage(error.message, "error");
+      }
     }
     return;
   }

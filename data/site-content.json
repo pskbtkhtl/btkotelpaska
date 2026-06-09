@@ -37,12 +37,12 @@
   "brand": {
     "logo": "https://fqaniohqvpsohxqlmsbj.supabase.co/storage/v1/object/public/paska-media/uploads/1781020402127-remove_bg.png",
     "name": " ",
+    "navSize": 17,
     "offsetX": -17,
     "offsetY": -8,
     "location": "",
     "logoSize": 108,
-    "logoLayout": "stacked",
-    "navSize": 17
+    "logoLayout": "stacked"
   },
   "theme": {
     "ink": "#1e2a2f",
@@ -132,7 +132,7 @@
             "en": "Every corner is shaped around clean lines, natural tones and an open feeling toward the sea.",
             "tr": "Her köşe; sade çizgiler, doğal tonlar ve denize açılan ferah bir his için tasarlandı."
           },
-          "image": "assets/images/hero-aegean-escape.webp",
+          "image": "https://fqaniohqvpsohxqlmsbj.supabase.co/storage/v1/object/public/paska-media/uploads/1781021546247-img_8366.jpeg",
           "title": {
             "en": "Morning light drifts slowly across the Aegean.",
             "tr": "Günün ışığı Ege'ye yavaşça yayılır."
@@ -152,7 +152,7 @@
             "en": "The pool and jacuzzi area offers a calm, elegant atmosphere for leaving the pace of the day behind.",
             "tr": "Havuz ve jacuzzi alanı, günün temposunu geride bırakmak için dingin ve zarif bir atmosfer sunar."
           },
-          "image": "assets/images/pool-jacuzzi-sea.webp",
+          "image": "https://fqaniohqvpsohxqlmsbj.supabase.co/storage/v1/object/public/paska-media/uploads/1781021563288-img_8384.jpeg",
           "title": {
             "en": "Water, silence and private space.",
             "tr": "Su, sessizlik ve özel alan."
@@ -190,7 +190,7 @@
             "en": "Sea View Room",
             "tr": "Deniz Manzaralı Oda"
           },
-          "image": "assets/images/room-balcony-sea.webp"
+          "image": "https://fqaniohqvpsohxqlmsbj.supabase.co/storage/v1/object/public/paska-media/uploads/1781022442131-untitled_hdr-23.jpg"
         },
         {
           "alt": {
@@ -341,7 +341,7 @@
           "en": "Sunsets, stone streets and a light breeze from the sea. Foca carries the simple, natural rhythm of an unhurried stay.",
           "tr": "Gün batımları, taş sokaklar ve denize karışan hafif rüzgar. Foça, telaşsız bir tatilin sade ve doğal ritmini taşır."
         },
-        "image": "assets/images/balcony-sunset.webp",
+        "image": "https://fqaniohqvpsohxqlmsbj.supabase.co/storage/v1/object/public/paska-media/uploads/1781021484743-dji_fly_20260607_171728_0311_1780962833339_photo.jpeg",
         "title": {
           "en": "The calm breath of the Aegean.",
           "tr": "Ege'nin sakin nefesi."
@@ -385,5 +385,5 @@
       "enabled": true
     }
   ],
-  "updatedAt": "2026-06-09T16:09:21.324Z"
+  "updatedAt": "2026-06-09T16:27:39.612Z"
 }
