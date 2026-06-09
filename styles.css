@@ -1128,6 +1128,16 @@ textarea {
   background: #fbf8f2;
 }
 
+.media-picker__more {
+  padding: 12px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--gray);
+  background: #fbf8f2;
+  text-align: center;
+  font-size: 0.84rem;
+}
+
 .admin-color-field {
   display: grid;
   gap: 10px;

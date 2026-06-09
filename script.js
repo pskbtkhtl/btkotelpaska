@@ -38,6 +38,7 @@ const state = {
   media: [],
   upload: null,
   mediaPicker: null,
+  mediaPickerLimit: 10,
 };
 
 const supabaseConfig = window.PASKA_SUPABASE_CONFIG || {};
@@ -684,6 +685,11 @@ function brandPreview() {
 function renderMediaPicker() {
   if (!state.mediaPicker) return "";
   const current = getValue(state.mediaPicker.path);
+  const limit = state.mediaPickerLimit || 10;
+  const visibleMedia = state.media.slice(0, limit);
+  const selectedMedia = current && !visibleMedia.some((file) => file.path === current) ? state.media.find((file) => file.path === current) : null;
+  const mediaToRender = selectedMedia ? [selectedMedia, ...visibleMedia] : visibleMedia;
+  const hasMore = limit < state.media.length;
   return `
     <div class="media-picker" role="dialog" aria-modal="true" aria-label="Görsel seçimi">
       <div class="media-picker__panel">
@@ -705,9 +711,9 @@ function renderMediaPicker() {
         <div class="media-picker__grid">
           ${
             state.media.length
-              ? state.media
+              ? mediaToRender
                   .map((file, index) => `
-                    <button class="media-picker__item ${file.path === current ? "is-selected" : ""}" type="button" data-pick-media="${index}">
+                    <button class="media-picker__item ${file.path === current ? "is-selected" : ""}" type="button" data-pick-media="${state.media.indexOf(file)}">
                       <img src="${escapeHtml(file.path)}" alt="${escapeHtml(file.name)}">
                       <span>${escapeHtml(file.name)}</span>
                     </button>
@@ -716,6 +722,7 @@ function renderMediaPicker() {
               : `<div class="media-picker__empty">Henüz seçilebilir görsel yok. Önce Medya sekmesinden görsel yükle.</div>`
           }
         </div>
+        ${hasMore ? `<div class="media-picker__more" data-media-load-more>Kaydırdıkça daha fazla görsel yüklenecek · ${mediaToRender.length}/${state.media.length}</div>` : ""}
       </div>
     </div>
   `;
@@ -1304,11 +1311,13 @@ adminContent.addEventListener("click", async (event) => {
   if (target.dataset.openMediaPicker !== undefined) {
     const label = target.closest(".media-choice")?.querySelector(".admin-field-label")?.textContent || "Görsel seç";
     state.mediaPicker = { path: target.dataset.path, label };
+    state.mediaPickerLimit = 10;
     renderAdmin();
     return;
   }
   if (target.dataset.closeMediaPicker !== undefined) {
     state.mediaPicker = null;
+    state.mediaPickerLimit = 10;
     renderAdmin();
     return;
   }
@@ -1445,6 +1454,15 @@ adminContent.addEventListener("drop", async (event) => {
     showAdminMessage(error.message, "error");
   }
 });
+
+adminContent.addEventListener("scroll", (event) => {
+  const panel = event.target.matches?.(".media-picker__panel") ? event.target : event.target.closest?.(".media-picker__panel");
+  if (!panel || !state.mediaPicker) return;
+  const nearBottom = panel.scrollTop + panel.clientHeight >= panel.scrollHeight - 160;
+  if (!nearBottom || state.mediaPickerLimit >= state.media.length) return;
+  state.mediaPickerLimit = Math.min(state.mediaPickerLimit + 10, state.media.length);
+  renderAdmin();
+}, true);
 
 adminContent.addEventListener("pointerdown", (event) => {
   const target = event.target.closest("[data-brand-drag]");
