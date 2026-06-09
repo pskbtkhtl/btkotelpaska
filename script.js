@@ -83,7 +83,8 @@ function escapeHtml(value = "") {
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 function hasSupabaseConfig() {
@@ -165,6 +166,26 @@ function isAllowedAdmin(email = state.user?.email) {
 function storagePublicUrl(path) {
   if (/^https?:\/\//i.test(path)) return path;
   return `${supabaseUrl}/storage/v1/object/public/${supabaseMediaBucket}/${path}`;
+}
+
+function storageThumbnailUrl(path, width = 360, height = 260, quality = 35) {
+  if (!path || !supabaseUrl) return path;
+  const publicPrefix = `${supabaseUrl}/storage/v1/object/public/${supabaseMediaBucket}/`;
+  if (!String(path).startsWith(publicPrefix)) return path;
+  const objectPath = String(path).slice(publicPrefix.length);
+  const params = new URLSearchParams({
+    width: String(width),
+    height: String(height),
+    resize: "cover",
+    quality: String(quality),
+  });
+  return `${supabaseUrl}/storage/v1/render/image/public/${supabaseMediaBucket}/${objectPath}?${params}`;
+}
+
+function adminImage(src, alt = "", width = 360, height = 260) {
+  const full = src || "";
+  const thumb = storageThumbnailUrl(full, width, height);
+  return `<img src="${escapeHtml(thumb)}" alt="${escapeHtml(alt)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${escapeHtml(full)}';">`;
 }
 
 function safeUploadName(fileName) {
@@ -635,7 +656,7 @@ function mediaSelect(label, path, value, help = "") {
       <div class="media-choice">
         <span class="admin-field-label">${escapeHtml(label)}</span>
         <button class="media-choice__button" type="button" data-open-media-picker data-path="${escapeHtml(path)}">
-          ${image ? `<img src="${escapeHtml(image)}" alt="" loading="lazy" decoding="async">` : `<span class="media-choice__empty">Görsel seçilmedi</span>`}
+          ${image ? adminImage(image, "", 280, 210) : `<span class="media-choice__empty">Görsel seçilmedi</span>`}
           <span class="media-choice__cta">Görsel seç</span>
         </button>
         ${help ? `<small>${escapeHtml(help)}</small>` : ""}
@@ -726,7 +747,7 @@ function renderMediaPicker() {
 function mediaPickerItem(file, current) {
   return `
     <button class="media-picker__item ${file.path === current ? "is-selected" : ""}" type="button" data-pick-media="${state.media.indexOf(file)}">
-      <img src="${escapeHtml(file.path)}" alt="${escapeHtml(file.name)}" loading="lazy" decoding="async">
+      ${adminImage(file.path, file.name, 320, 240)}
       <span>${escapeHtml(file.name)}</span>
     </button>
   `;
@@ -737,7 +758,7 @@ function seoPreview() {
   const image = absoluteAssetUrl(meta.ogImage || fallbackData.meta.ogImage);
   return `
     <div class="seo-preview">
-      <img src="${escapeHtml(image)}" alt="" loading="lazy" decoding="async">
+      ${adminImage(image, "", 220, 115)}
       <div>
         <span>Paylaşım önizlemesi</span>
         <strong>${escapeHtml(meta.title || fallbackData.meta.title)}</strong>
@@ -1085,7 +1106,7 @@ function renderMediaAdmin() {
             ? state.media
                 .map((file, index) => `
             <div class="media-item" data-media-index="${index}">
-              <img src="${escapeHtml(file.path)}" alt="${escapeHtml(file.name)}" loading="lazy" decoding="async">
+              ${adminImage(file.path, file.name, 320, 240)}
               <small>${escapeHtml(file.path)}</small>
               <div class="media-actions">
                 <button class="button button--muted" type="button" data-copy-media="${index}">URL kopyala</button>
