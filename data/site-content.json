@@ -1,0 +1,389 @@
+{
+  "nav": [
+    {
+      "id": "story",
+      "label": {
+        "en": "Experience",
+        "tr": "Deneyim"
+      }
+    },
+    {
+      "id": "rooms",
+      "label": {
+        "en": "Rooms",
+        "tr": "Odalar"
+      }
+    },
+    {
+      "id": "gallery",
+      "label": {
+        "en": "Gallery",
+        "tr": "Galeri"
+      }
+    },
+    {
+      "id": "contact",
+      "label": {
+        "en": "Contact",
+        "tr": "İletişim"
+      }
+    }
+  ],
+  "meta": {
+    "title": "Paska Otel | Foça'da Sakin ve Özel Bir Kaçış",
+    "ogImage": "https://fqaniohqvpsohxqlmsbj.supabase.co/storage/v1/object/public/paska-media/uploads/1781012583618-9c8844ee.jpg",
+    "description": "Paska Otel Foça, İzmir'de deniz manzarası, huzur ve sade lüksü buluşturan butik bir konaklama deneyimi."
+  },
+  "brand": {
+    "logo": "https://fqaniohqvpsohxqlmsbj.supabase.co/storage/v1/object/public/paska-media/uploads/1781020402127-remove_bg.png",
+    "name": " ",
+    "offsetX": -17,
+    "offsetY": -8,
+    "location": "",
+    "logoSize": 108,
+    "logoLayout": "stacked",
+    "navSize": 17
+  },
+  "theme": {
+    "ink": "#1e2a2f",
+    "blue": "#0d3f55",
+    "gray": "#7a807d",
+    "sand": "#eee5d7",
+    "stone": "#cbbba5",
+    "white": "#fffdfa",
+    "blueSoft": "#426878",
+    "animations": true,
+    "buttonStyle": "solid",
+    "radiusPreset": "square",
+    "bodyBackground": "#fffdfa"
+  },
+  "footer": {
+    "left": "Paska Otel",
+    "right": "Foça, İzmir"
+  },
+  "sections": [
+    {
+      "id": "hero",
+      "type": "hero",
+      "order": 10,
+      "style": {
+        "layout": "centered",
+        "spacing": "normal",
+        "textMode": "light",
+        "background": "#0d3f55"
+      },
+      "content": {
+        "alt": {
+          "en": "Boutique hotel terrace with sea view in Foca",
+          "tr": "Foça'da deniz manzaralı butik otel terası"
+        },
+        "image": "https://fqaniohqvpsohxqlmsbj.supabase.co/storage/v1/object/public/paska-media/uploads/1781012397755-19901498.jpg",
+        "title": {
+          "en": "A Quiet Private Escape in Foca",
+          "tr": "Foça'da Sakin ve Özel Bir Kaçış"
+        },
+        "eyebrow": {
+          "en": "Paska Hotel Foca",
+          "tr": "Paska Otel Foça"
+        },
+        "subtitle": {
+          "en": "A boutique experience where sea views, calm and simple luxury meet.",
+          "tr": "Deniz manzarası, huzur ve sade lüksün buluştuğu butik deneyim."
+        },
+        "primaryButton": {
+          "en": "Explore Rooms",
+          "tr": "Odaları Keşfet"
+        },
+        "secondaryButton": {
+          "en": "Contact",
+          "tr": "İletişim"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "id": "intro",
+      "type": "intro",
+      "order": 20,
+      "style": {
+        "layout": "default",
+        "spacing": "spacious",
+        "textMode": "dark",
+        "background": "#fffdfa"
+      },
+      "content": {
+        "text": {
+          "en": "Paska Hotel brings together Foca's gentle rhythm with sea, light and privacy in a refined boutique stay.",
+          "tr": "Paska Otel, Foça'nın sakin ritmini deniz, ışık ve mahremiyetle buluşturan yalın bir butik otel deneyimi sunar."
+        }
+      },
+      "enabled": true
+    },
+    {
+      "id": "story",
+      "type": "story",
+      "items": [
+        {
+          "alt": {
+            "en": "Paska Hotel terrace with sea view",
+            "tr": "Deniz manzaralı Paska Otel terası"
+          },
+          "text": {
+            "en": "Every corner is shaped around clean lines, natural tones and an open feeling toward the sea.",
+            "tr": "Her köşe; sade çizgiler, doğal tonlar ve denize açılan ferah bir his için tasarlandı."
+          },
+          "image": "assets/images/hero-aegean-escape.webp",
+          "title": {
+            "en": "Morning light drifts slowly across the Aegean.",
+            "tr": "Günün ışığı Ege'ye yavaşça yayılır."
+          },
+          "layout": "image-left",
+          "eyebrow": {
+            "en": "Sea View",
+            "tr": "Deniz Manzarası"
+          }
+        },
+        {
+          "alt": {
+            "en": "Pool and jacuzzi overlooking the sea",
+            "tr": "Deniz manzaralı havuz ve jacuzzi"
+          },
+          "text": {
+            "en": "The pool and jacuzzi area offers a calm, elegant atmosphere for leaving the pace of the day behind.",
+            "tr": "Havuz ve jacuzzi alanı, günün temposunu geride bırakmak için dingin ve zarif bir atmosfer sunar."
+          },
+          "image": "assets/images/pool-jacuzzi-sea.webp",
+          "title": {
+            "en": "Water, silence and private space.",
+            "tr": "Su, sessizlik ve özel alan."
+          },
+          "layout": "image-right",
+          "eyebrow": {
+            "en": "Pool & Jacuzzi",
+            "tr": "Havuz & Jacuzzi"
+          }
+        }
+      ],
+      "order": 30,
+      "style": {
+        "layout": "default",
+        "spacing": "normal",
+        "textMode": "dark",
+        "background": "#fffdfa"
+      },
+      "enabled": true
+    },
+    {
+      "id": "rooms",
+      "type": "rooms",
+      "items": [
+        {
+          "alt": {
+            "en": "Boutique hotel room with sea view",
+            "tr": "Deniz manzaralı butik otel odası"
+          },
+          "desc": {
+            "en": "A bright room with a balcony opening to a quiet Aegean morning.",
+            "tr": "Işığı içeri alan, balkonlu ve sakin bir Ege sabahına açılan ferah oda."
+          },
+          "name": {
+            "en": "Sea View Room",
+            "tr": "Deniz Manzaralı Oda"
+          },
+          "image": "assets/images/room-balcony-sea.webp"
+        },
+        {
+          "alt": {
+            "en": "Garden and pool atmosphere",
+            "tr": "Bahçe ve havuz atmosferi"
+          },
+          "desc": {
+            "en": "Natural textures, soft colors and a peaceful feeling of stay.",
+            "tr": "Doğal dokular, yumuşak renkler ve huzurlu bir konaklama hissi."
+          },
+          "name": {
+            "en": "Garden Room",
+            "tr": "Bahçe Katı Oda"
+          },
+          "image": "assets/images/pool-jacuzzi-sea.webp"
+        },
+        {
+          "alt": {
+            "en": "Balcony with sunset view",
+            "tr": "Gün batımı manzaralı balkon"
+          },
+          "desc": {
+            "en": "A private, minimal Foca experience close to sunset light.",
+            "tr": "Gün batımına yakın, özel ve yalın bir Foça deneyimi."
+          },
+          "name": {
+            "en": "Terrace Room",
+            "tr": "Teras Oda"
+          },
+          "image": "assets/images/balcony-sunset.webp"
+        }
+      ],
+      "order": 40,
+      "style": {
+        "layout": "default",
+        "spacing": "normal",
+        "textMode": "dark",
+        "background": "#f7f3ed"
+      },
+      "content": {
+        "title": {
+          "en": "Simple, airy and restful.",
+          "tr": "Sade, ferah ve dingin."
+        },
+        "eyebrow": {
+          "en": "Rooms",
+          "tr": "Odalar"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "id": "gallery",
+      "type": "gallery",
+      "items": [
+        {
+          "image": "assets/images/pool-jacuzzi-sea.webp",
+          "label": {
+            "en": "Pool",
+            "tr": "Havuz"
+          },
+          "ratio": "4 / 5"
+        },
+        {
+          "image": "assets/images/room-balcony-sea.webp",
+          "label": {
+            "en": "Room",
+            "tr": "Oda"
+          },
+          "ratio": "5 / 4"
+        },
+        {
+          "image": "assets/images/balcony-sunset.webp",
+          "label": {
+            "en": "Sunset",
+            "tr": "Gün Batımı"
+          },
+          "ratio": "3 / 4"
+        },
+        {
+          "image": "assets/images/hero-aegean-escape.webp",
+          "label": {
+            "en": "Sea",
+            "tr": "Deniz"
+          },
+          "ratio": "16 / 10"
+        },
+        {
+          "image": "assets/images/pool-jacuzzi-sea.webp",
+          "label": {
+            "en": "Jacuzzi",
+            "tr": "Jacuzzi"
+          },
+          "ratio": "1 / 1"
+        },
+        {
+          "image": "assets/images/balcony-sunset.webp",
+          "label": {
+            "en": "Balcony",
+            "tr": "Balkon"
+          },
+          "ratio": "4 / 5"
+        },
+        {
+          "image": "https://fqaniohqvpsohxqlmsbj.supabase.co/storage/v1/object/public/paska-media/uploads/1781012391048-afbab617.jpg",
+          "label": {
+            "en": "Banio",
+            "tr": "Banyo"
+          },
+          "ratio": "16 / 10"
+        }
+      ],
+      "order": 50,
+      "style": {
+        "layout": "default",
+        "spacing": "normal",
+        "textMode": "dark",
+        "background": "#fffdfa"
+      },
+      "content": {
+        "title": {
+          "en": "Light, water and Foca's slower time.",
+          "tr": "Işık, su ve Foça'nın yavaş zamanı."
+        },
+        "eyebrow": {
+          "en": "Gallery",
+          "tr": "Galeri"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "id": "foca",
+      "type": "foca",
+      "order": 60,
+      "style": {
+        "layout": "image-left",
+        "spacing": "normal",
+        "textMode": "light",
+        "background": "#0d3f55"
+      },
+      "content": {
+        "alt": {
+          "en": "Foca sunset and sea view",
+          "tr": "Foça gün batımı ve deniz manzarası"
+        },
+        "text": {
+          "en": "Sunsets, stone streets and a light breeze from the sea. Foca carries the simple, natural rhythm of an unhurried stay.",
+          "tr": "Gün batımları, taş sokaklar ve denize karışan hafif rüzgar. Foça, telaşsız bir tatilin sade ve doğal ritmini taşır."
+        },
+        "image": "assets/images/balcony-sunset.webp",
+        "title": {
+          "en": "The calm breath of the Aegean.",
+          "tr": "Ege'nin sakin nefesi."
+        },
+        "eyebrow": {
+          "en": "Foca",
+          "tr": "Foça"
+        }
+      },
+      "enabled": true
+    },
+    {
+      "id": "contact",
+      "type": "contact",
+      "order": 70,
+      "style": {
+        "layout": "default",
+        "spacing": "normal",
+        "textMode": "dark",
+        "background": "#f7f3ed"
+      },
+      "content": {
+        "map": "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3828.665923383948!2d26.821369576446934!3d38.75107095532415!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14ba35a1a2fa255f%3A0x168f4652d0840304!2sPaska%20Otel!5e1!3m2!1str!2str!4v1781013264846!5m2!1str!2str",
+        "phone": "+90 501 664 5361",
+        "title": {
+          "en": "Reach Paska Hotel.",
+          "tr": "Paska Otel'e ulaşın."
+        },
+        "address": {
+          "en": "Foca, Izmir",
+          "tr": "Fatih Mh. Çağlayan Cd., No:26/2 Foça, İzmir"
+        },
+        "eyebrow": {
+          "en": "Contact",
+          "tr": "İletişim"
+        },
+        "whatsapp": "https://wa.me/905016645361",
+        "instagram": "https://www.instagram.com/paskaotel/",
+        "phoneHref": ""
+      },
+      "enabled": true
+    }
+  ],
+  "updatedAt": "2026-06-09T16:09:21.324Z"
+}

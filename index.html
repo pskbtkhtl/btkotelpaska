@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Paska Otel | Foça'da Sakin ve Özel Bir Kaçış</title>
+    <meta
+      name="description"
+      content="Paska Otel Foça, İzmir'de deniz manzarası, huzur ve sade lüksü buluşturan butik bir konaklama deneyimi."
+    />
+    <meta name="theme-color" content="#f7f3ed" />
+    <meta property="og:title" content="Paska Otel | Foça, İzmir" />
+    <meta
+      property="og:description"
+      content="Deniz manzarası, huzur ve sade lüksün buluştuğu butik deneyim."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="assets/images/hero-aegean-escape.webp" />
+    <meta property="og:url" content="http://localhost:8080/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="assets/images/hero-aegean-escape.webp" />
+    <link rel="preload" href="assets/images/hero-aegean-escape.webp" as="image" />
+    <link rel="stylesheet" href="styles.css?v=13" />
+  </head>
+  <body>
+    <header class="site-header" data-header>
+      <a class="brand" href="#top" aria-label="Paska Otel ana sayfa">
+        <span data-brand-name>Paska</span>
+        <small data-brand-location>Otel Foça</small>
+      </a>
+      <nav class="nav-links" aria-label="Ana menü" data-nav></nav>
+      <button class="lang-switch" type="button" data-lang-toggle aria-label="Switch language">EN</button>
+    </header>
+
+    <main id="top" data-site-root></main>
+
+    <footer class="footer" data-footer></footer>
+
+    <div class="admin-shell" data-admin-shell hidden>
+      <div class="admin-login" data-admin-login>
+        <form class="admin-login__card" data-login-form>
+          <p class="eyebrow">Paska CMS</p>
+          <h2>Admin girişi</h2>
+          <label>
+            <span>E-posta</span>
+            <input type="email" name="email" value="admin@paskaotel.com" autocomplete="username" required />
+          </label>
+          <label>
+            <span>Şifre</span>
+            <input type="password" name="password" autocomplete="current-password" required />
+          </label>
+          <p class="admin-message" data-login-message></p>
+          <div class="admin-actions">
+            <button class="button button--dark" type="submit" data-login-submit>Giriş</button>
+            <button class="button button--muted" type="button" data-admin-close>Kapat</button>
+          </div>
+        </form>
+      </div>
+
+      <section class="admin-panel" data-admin-panel hidden>
+        <aside class="admin-sidebar">
+          <div>
+            <p class="eyebrow">Paska CMS</p>
+            <h2>Panel</h2>
+          </div>
+          <nav class="admin-tabs" data-admin-tabs></nav>
+          <div class="admin-sidebar__actions">
+            <button class="button button--dark" type="button" data-save-site>Kaydet</button>
+            <button class="button button--muted" type="button" data-preview-site>Önizle</button>
+            <button class="button button--muted" type="button" data-export-site>Yedeği indir</button>
+            <label class="button button--muted file-button">
+              JSON içe aktar
+              <input type="file" accept="application/json" data-import-site />
+            </label>
+            <button class="button button--muted" type="button" data-logout>Çıkış</button>
+          </div>
+        </aside>
+        <div class="admin-main">
+          <div class="admin-topbar">
+            <div>
+              <p class="eyebrow" data-admin-section-label>Dashboard</p>
+              <h2 data-admin-title>Site yönetimi</h2>
+            </div>
+            <button class="admin-close" type="button" data-admin-close aria-label="Admin paneli kapat">×</button>
+          </div>
+          <div class="admin-content" data-admin-content></div>
+        </div>
+      </section>
+    </div>
+
+    <script src="config.js?v=1"></script>
+    <script src="script.js?v=19" defer></script>
+  </body>
+</html>

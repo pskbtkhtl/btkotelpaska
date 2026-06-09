@@ -1,0 +1,7 @@
+server-*.log
+data/admin-users.json
+node_modules/
+.env
+.env.*
+.DS_Store
+Thumbs.db
