@@ -228,9 +228,9 @@ function publicImage(src, alt = "", presetName = "gallery") {
   const full = src || "";
   const preset = publicImagePresets[presetName] || publicImagePresets.gallery;
   const largest = preset.widths[preset.widths.length - 1];
-  const optimized = storageRenderUrl(full, { width: largest, resize: "cover", quality: preset.quality });
+  const optimized = storageRenderUrl(full, { width: largest, quality: preset.quality });
   const srcset = preset.widths
-    .map((width) => `${storageRenderUrl(full, { width, resize: "cover", quality: preset.quality })} ${width}w`)
+    .map((width) => `${storageRenderUrl(full, { width, quality: preset.quality })} ${width}w`)
     .join(", ");
   const sourceAttrs = optimized === full ? "" : ` srcset="${escapeHtml(srcset)}" sizes="${escapeHtml(preset.sizes)}"`;
   return `<img ${preset.attrs} src="${escapeHtml(optimized)}"${sourceAttrs} alt="${escapeHtml(alt)}" onerror="this.onerror=null;this.src='${escapeHtml(full)}';this.removeAttribute('srcset');">`;
