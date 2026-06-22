@@ -48,6 +48,33 @@ img {
   object-fit: cover;
 }
 
+.site-image {
+  opacity: 0;
+  transition: opacity 520ms var(--ease);
+}
+
+.site-image.is-loaded {
+  opacity: 1;
+}
+
+.story-block__image,
+.room-card__image,
+.masonry__item,
+.foca__image {
+  background:
+    linear-gradient(110deg, rgba(255, 253, 250, 0.08), rgba(255, 253, 250, 0.32), rgba(255, 253, 250, 0.08)),
+    linear-gradient(135deg, rgba(203, 187, 165, 0.22), rgba(13, 63, 85, 0.08));
+  background-size: 220% 100%, 100% 100%;
+  animation: imagePlaceholder 1800ms var(--ease) infinite;
+}
+
+.story-block__image:has(.site-image.is-loaded),
+.room-card__image:has(.site-image.is-loaded),
+.masonry__item:has(.site-image.is-loaded),
+.foca__image:has(.site-image.is-loaded) {
+  animation: none;
+}
+
 .site-loader {
   position: fixed;
   inset: 0;
@@ -1618,6 +1645,16 @@ textarea {
 
   to {
     transform: translateX(260%);
+  }
+}
+
+@keyframes imagePlaceholder {
+  from {
+    background-position: 180% 0, 0 0;
+  }
+
+  to {
+    background-position: -80% 0, 0 0;
   }
 }
 

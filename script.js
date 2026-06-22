@@ -67,6 +67,7 @@ let loaderHidden = false;
 const loaderStartedAt = Date.now();
 const minLoaderTime = 900;
 const maxHeroWait = 5000;
+const warmedImageUrls = new Set();
 
 const adminSections = [
   ["dashboard", "Özet"],
@@ -324,7 +325,7 @@ function updateSiteLoaderBrand() {
   const name = brand.name || "Paska";
   loaderMark.innerHTML = brand.logo
     ? `<img src="${escapeHtml(brand.logo)}" alt="${escapeHtml(name || "Paska Otel logosu")}" decoding="async">`
-    : `<span class="site-loader__fallback">${escapeHtml(name || "Paska")}</span>`;
+    : "";
 }
 
 function hideSiteLoader() {
@@ -336,6 +337,7 @@ function hideSiteLoader() {
     siteLoader.classList.add("is-hidden");
     window.setTimeout(() => {
       siteLoader.hidden = true;
+      warmSiteImages();
     }, 760);
   }, wait);
 }
@@ -356,6 +358,39 @@ function waitForHeroThenHideLoader() {
   heroImage.addEventListener("error", done, { once: true });
   window.clearTimeout(loaderTimer);
   loaderTimer = window.setTimeout(done, maxHeroWait);
+}
+
+function prepareSiteImages() {
+  siteRoot.querySelectorAll(".site-image").forEach((image) => {
+    const show = () => image.classList.add("is-loaded");
+    if (image.complete) {
+      show();
+      return;
+    }
+    image.addEventListener("load", show, { once: true });
+    image.addEventListener("error", show, { once: true });
+  });
+}
+
+function warmSiteImages() {
+  const urls = [...siteRoot.querySelectorAll(".site-image")]
+    .map((image) => image.currentSrc || image.src)
+    .filter(Boolean)
+    .filter((url) => !warmedImageUrls.has(url));
+  let index = 0;
+  const loadNext = () => {
+    const url = urls[index];
+    index += 1;
+    if (!url) return;
+    warmedImageUrls.add(url);
+    const preload = new Image();
+    preload.decoding = "async";
+    preload.onload = () => window.setTimeout(loadNext, 140);
+    preload.onerror = () => window.setTimeout(loadNext, 140);
+    preload.src = url;
+  };
+  const schedule = window.requestIdleCallback || ((callback) => window.setTimeout(callback, 900));
+  schedule(loadNext, { timeout: 2000 });
 }
 
 function updateMeta() {
@@ -405,7 +440,7 @@ function renderHero(section) {
   const content = section.content || {};
   return `
     <section class="hero" id="hero" aria-label="Paska Otel">
-      <img class="hero__image" src="${escapeHtml(content.image)}" alt="${escapeHtml(t(content.alt))}" />
+      <img class="hero__image site-image" src="${escapeHtml(content.image)}" alt="${escapeHtml(t(content.alt))}" />
       <div class="hero__shade"></div>
       <div class="hero__content reveal">
         <p class="eyebrow">${escapeHtml(t(content.eyebrow))}</p>
@@ -447,7 +482,7 @@ function renderStory(section) {
           return `
             <article class="story-block ${layoutClass} reveal">
               <div class="story-block__image" style="${escapeHtml(imageStyle)}">
-                <img src="${escapeHtml(item.image)}" alt="${escapeHtml(t(item.alt))}" loading="lazy">
+                <img class="site-image" src="${escapeHtml(item.image)}" alt="${escapeHtml(t(item.alt))}" loading="lazy" decoding="async">
               </div>
               <div class="story-block__copy">
                 <p class="eyebrow">${escapeHtml(t(item.eyebrow))}</p>
@@ -472,7 +507,7 @@ function renderRooms(section) {
           .map(
             (room) => `
               <article class="room-card reveal">
-                <div class="room-card__image"><img src="${escapeHtml(room.image)}" alt="${escapeHtml(t(room.alt))}" loading="lazy"></div>
+                <div class="room-card__image"><img class="site-image" src="${escapeHtml(room.image)}" alt="${escapeHtml(t(room.alt))}" loading="lazy" decoding="async"></div>
                 <div class="room-card__copy">
                   <h3>${escapeHtml(t(room.name))}</h3>
                   <p>${escapeHtml(t(room.desc))}</p>
@@ -495,7 +530,7 @@ function renderGallery(section) {
           .map(
             (item) => `
               <figure class="masonry__item reveal" style="--ratio: ${escapeHtml(item.ratio || "4 / 5")}">
-                <img src="${escapeHtml(item.image)}" alt="${escapeHtml(t(item.label))}" loading="lazy">
+                <img class="site-image" src="${escapeHtml(item.image)}" alt="${escapeHtml(t(item.label))}" loading="lazy" decoding="async">
                 <span>${escapeHtml(t(item.label))}</span>
               </figure>
             `
@@ -511,7 +546,7 @@ function renderFoca(section) {
   const content = section.content || {};
   return `
     <section class="${sectionClass(section, `foca ${layout}`)}" id="foca" ${styleVars(section)}>
-      <div class="foca__image reveal"><img src="${escapeHtml(content.image)}" alt="${escapeHtml(t(content.alt))}" loading="lazy" /></div>
+      <div class="foca__image reveal"><img class="site-image" src="${escapeHtml(content.image)}" alt="${escapeHtml(t(content.alt))}" loading="lazy" decoding="async" /></div>
       <div class="foca__copy reveal">
         <p class="eyebrow">${escapeHtml(t(content.eyebrow))}</p>
         <h2>${escapeHtml(t(content.title))}</h2>
@@ -574,6 +609,7 @@ function renderSite() {
   updateSiteLoaderBrand();
   siteRoot.innerHTML = sortedSections().map(renderSection).join("");
   footerRoot.innerHTML = `<p>${escapeHtml(state.data.footer?.left || "")}</p><p>${escapeHtml(state.data.footer?.right || "")}</p>`;
+  prepareSiteImages();
   revealOnScroll();
 }
 
