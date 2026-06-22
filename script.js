@@ -36,6 +36,8 @@ const state = {
   adminOpen: false,
   adminTab: "dashboard",
   media: [],
+  rooms: [],
+  removedRoomIds: [],
   upload: null,
   mediaPicker: null,
   mediaPickerLimit: 10,
@@ -86,6 +88,16 @@ function t(value) {
   return value?.[state.activeLang] || value?.tr || value?.en || "";
 }
 
+function slugify(value = "") {
+  return String(value)
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .toLowerCase();
+}
+
 function escapeHtml(value = "") {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -133,6 +145,59 @@ async function supabaseSignIn(email, password) {
 async function supabaseSignOut() {
   if (!state.token) return;
   await supabaseRequest("/auth/v1/logout", { method: "POST" }).catch(() => {});
+}
+
+function fallbackRoomsFromContent() {
+  const section = (state.data.sections || []).find((item) => item.type === "rooms");
+  return (section?.items || []).map((room, index) => {
+    const title = room.name || { tr: `Oda ${index + 1}`, en: `Room ${index + 1}` };
+    return {
+      id: `fallback-${index}`,
+      slug: slugify(t(title)) || `oda-${index + 1}`,
+      title,
+      short_description: room.desc || {},
+      description: room.desc || {},
+      location_label: { tr: "Foça bölgesinde oda", en: "Room in Foca" },
+      details: { guests: 2, beds: "1 çift kişilik yatak", bath: "Özel banyo" },
+      amenities: ["Klima", "Özel banyo", "Wi-Fi"],
+      cover_image_url: room.image,
+      images: [{ image_url: room.image, alt: room.alt || title, is_cover: true, sort_order: 10 }],
+      sort_order: index * 10,
+      status: "published",
+    };
+  });
+}
+
+function normalizeRoom(row, images = []) {
+  const roomImages = images
+    .filter((image) => image.room_id === row.id)
+    .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
+    .map((image) => ({ ...image, image_url: image.image_url || row.cover_image_url }));
+  if (!roomImages.length && row.cover_image_url) {
+    roomImages.push({ image_url: row.cover_image_url, alt: row.title, is_cover: true, sort_order: 0 });
+  }
+  return { ...row, images: roomImages };
+}
+
+async function loadRoomsCatalog() {
+  try {
+    if (!hasSupabaseConfig()) throw new Error("Supabase config unavailable");
+    const rooms = await supabaseRequest("/rest/v1/rooms?select=*&status=eq.published&order=sort_order.asc,created_at.asc", {
+      method: "GET",
+      token: "",
+    });
+    const roomIds = (rooms || []).map((room) => room.id).filter(Boolean);
+    let images = [];
+    if (roomIds.length) {
+      images = await supabaseRequest(`/rest/v1/room_images?select=*&room_id=in.(${roomIds.join(",")})&order=sort_order.asc,created_at.asc`, {
+        method: "GET",
+        token: "",
+      });
+    }
+    state.rooms = (rooms || []).map((room) => normalizeRoom(room, images || []));
+  } catch {
+    state.rooms = fallbackRoomsFromContent();
+  }
 }
 
 function saveSession(session) {
@@ -393,6 +458,21 @@ function warmSiteImages() {
   schedule(loadNext, { timeout: 2000 });
 }
 
+function openRoomDetail(slug) {
+  const detail = $(`[data-room-detail="${CSS.escape(slug)}"]`);
+  if (!detail) return;
+  detail.hidden = false;
+  document.body.classList.add("room-detail-open");
+  prepareSiteImages();
+}
+
+function closeRoomDetail() {
+  document.querySelectorAll("[data-room-detail]").forEach((detail) => {
+    detail.hidden = true;
+  });
+  document.body.classList.remove("room-detail-open");
+}
+
 function updateMeta() {
   const title = state.data.meta?.title || fallbackData.meta.title;
   const description = state.data.meta?.description || fallbackData.meta.description;
@@ -432,6 +512,82 @@ function heading(section) {
     <div class="section-heading reveal">
       <p class="eyebrow">${escapeHtml(t(content.eyebrow))}</p>
       <h2>${escapeHtml(t(content.title))}</h2>
+    </div>
+  `;
+}
+
+function roomCover(room) {
+  return room.cover_image_url || room.images?.find((image) => image.is_cover)?.image_url || room.images?.[0]?.image_url || "";
+}
+
+function roomDetailsText(room) {
+  const details = room.details || {};
+  return [
+    details.guests ? `${details.guests} ${state.activeLang === "tr" ? "misafir" : "guests"}` : "",
+    details.beds || "",
+    details.bath || "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function roomCard(room) {
+  const image = roomCover(room);
+  return `
+    <article class="room-card reveal">
+      <button class="room-card__button" type="button" data-open-room="${escapeHtml(room.slug)}" aria-label="${escapeHtml(t(room.title))}">
+        <div class="room-card__image"><img class="site-image" src="${escapeHtml(image)}" alt="${escapeHtml(t(room.title))}" loading="lazy" decoding="async"></div>
+        <div class="room-card__copy">
+          <h3>${escapeHtml(t(room.title))}</h3>
+          <p>${escapeHtml(t(room.location_label) || (state.activeLang === "tr" ? "Foça bölgesinde oda" : "Room in Foca"))}</p>
+          <small>${escapeHtml(t(room.short_description))}</small>
+        </div>
+      </button>
+    </article>
+  `;
+}
+
+function roomDetail(room) {
+  const images = room.images?.length ? room.images : [{ image_url: roomCover(room), alt: room.title }];
+  const amenities = Array.isArray(room.amenities) ? room.amenities : [];
+  const contact = (state.data.sections || []).find((section) => section.type === "contact")?.content || {};
+  return `
+    <div class="room-detail" data-room-detail="${escapeHtml(room.slug)}" hidden>
+      <div class="room-detail__backdrop" data-close-room></div>
+      <article class="room-detail__panel" role="dialog" aria-modal="true" aria-label="${escapeHtml(t(room.title))}">
+        <button class="room-detail__close" type="button" data-close-room aria-label="${state.activeLang === "tr" ? "Oda detayını kapat" : "Close room detail"}">×</button>
+        <div class="room-detail__gallery">
+          ${images
+            .slice(0, 5)
+            .map(
+              (image, index) => `
+                <figure class="${index === 0 ? "is-large" : ""}">
+                  <img class="site-image" src="${escapeHtml(image.image_url)}" alt="${escapeHtml(t(image.alt) || t(room.title))}" loading="lazy" decoding="async">
+                </figure>
+              `
+            )
+            .join("")}
+        </div>
+        <div class="room-detail__content">
+          <div>
+            <p class="eyebrow">${escapeHtml(t(room.location_label) || "Paska Otel Foça")}</p>
+            <h2>${escapeHtml(t(room.title))}</h2>
+            <p class="room-detail__summary">${escapeHtml(t(room.description) || t(room.short_description))}</p>
+          </div>
+          <div class="room-detail__facts">
+            ${roomDetailsText(room) ? `<span>${escapeHtml(roomDetailsText(room))}</span>` : ""}
+          </div>
+          ${
+            amenities.length
+              ? `<div class="room-detail__amenities">${amenities.map((item) => `<span>${escapeHtml(t(item) || item)}</span>`).join("")}</div>`
+              : ""
+          }
+          <div class="room-detail__actions">
+            <a class="button button--dark" href="${escapeHtml(contact.whatsapp || "#contact")}" target="_blank" rel="noreferrer">WhatsApp</a>
+            <a class="button button--muted" href="#contact" data-close-room>${state.activeLang === "tr" ? "İletişim" : "Contact"}</a>
+          </div>
+        </div>
+      </article>
     </div>
   `;
 }
@@ -499,24 +655,14 @@ function renderStory(section) {
 
 function renderRooms(section) {
   const layout = section.style?.layout === "centered" ? "centered" : "";
+  const rooms = state.rooms.length ? state.rooms : fallbackRoomsFromContent();
   return `
     <section class="${sectionClass(section, "rooms")}" id="rooms" ${styleVars(section)}>
       ${heading(section)}
       <div class="room-grid ${layout}">
-        ${(section.items || [])
-          .map(
-            (room) => `
-              <article class="room-card reveal">
-                <div class="room-card__image"><img class="site-image" src="${escapeHtml(room.image)}" alt="${escapeHtml(t(room.alt))}" loading="lazy" decoding="async"></div>
-                <div class="room-card__copy">
-                  <h3>${escapeHtml(t(room.name))}</h3>
-                  <p>${escapeHtml(t(room.desc))}</p>
-                </div>
-              </article>
-            `
-          )
-          .join("")}
+        ${rooms.map(roomCard).join("")}
       </div>
+      ${rooms.map(roomDetail).join("")}
     </section>
   `;
 }
@@ -626,6 +772,7 @@ async function loadSiteContent() {
     const response = await fetch("data/site-content.json", { cache: "no-store" });
     state.data = response.ok ? await response.json() : structuredClone(fallbackData);
   }
+  await loadRoomsCatalog();
   renderSite();
   waitForHeroThenHideLoader();
 }
@@ -695,6 +842,63 @@ function setValue(path, value, options = {}) {
 
 function getValue(path) {
   return path.split(".").reduce((cursor, key) => cursor?.[key], state.data);
+}
+
+function getRoomValue(path) {
+  return path?.split(".").reduce((cursor, key) => cursor?.[key], state.rooms);
+}
+
+function setRoomValue(path, value) {
+  if (path.endsWith(".amenitiesText")) {
+    const roomIndex = Number(path.split(".")[0]);
+    if (state.rooms[roomIndex]) {
+      state.rooms[roomIndex].amenities = String(value || "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+    return;
+  }
+  const keys = path.split(".");
+  let cursor = state.rooms;
+  keys.slice(0, -1).forEach((key) => {
+    cursor[key] ??= Number.isInteger(Number(keys[keys.indexOf(key) + 1])) ? [] : {};
+    cursor = cursor[key];
+  });
+  cursor[keys.at(-1)] = value;
+}
+
+function roomInput(label, path, value, type = "text") {
+  return `<label><span>${label}</span><input type="${type}" data-room-path="${path}" value="${escapeHtml(value ?? "")}"></label>`;
+}
+
+function roomTextarea(label, path, value) {
+  return `<label><span>${label}</span><textarea rows="3" data-room-path="${path}">${escapeHtml(value ?? "")}</textarea></label>`;
+}
+
+function roomLocalizedInputs(label, basePath, value = {}, area = false) {
+  const field = area ? roomTextarea : roomInput;
+  return `
+    ${field(`${label} TR`, `${basePath}.tr`, value.tr)}
+    ${field(`${label} EN`, `${basePath}.en`, value.en)}
+  `;
+}
+
+function roomMediaSelect(label, path, value, help = "") {
+  const image = value || "";
+  return `
+    <div class="admin-media-field">
+      <div class="media-choice">
+        <span class="admin-field-label">${escapeHtml(label)}</span>
+        <button class="media-choice__button" type="button" data-open-media-picker data-room-media-path="${escapeHtml(path)}">
+          ${image ? adminImage(image, "", 280, 210) : `<span class="media-choice__empty">GÃ¶rsel seÃ§ilmedi</span>`}
+          <span class="media-choice__cta">GÃ¶rsel seÃ§</span>
+        </button>
+        ${help ? `<small>${escapeHtml(help)}</small>` : ""}
+        ${image ? `<code>${escapeHtml(image)}</code>` : ""}
+      </div>
+    </div>
+  `;
 }
 
 function input(label, path, value, type = "text") {
@@ -790,7 +994,7 @@ function brandPreview() {
 
 function renderMediaPicker() {
   if (!state.mediaPicker) return "";
-  const current = getValue(state.mediaPicker.path);
+  const current = state.mediaPicker.roomPath ? getRoomValue(state.mediaPicker.roomPath) : getValue(state.mediaPicker.path);
   const limit = state.mediaPickerLimit || 10;
   const visibleMedia = state.media.slice(0, limit);
   const selectedMedia = current && !visibleMedia.some((file) => file.path === current) ? state.media.find((file) => file.path === current) : null;
@@ -1052,20 +1256,20 @@ function renderContentAdmin() {
 }
 
 function renderRoomsAdmin() {
-  const section = state.data.sections.find((item) => item.type === "rooms");
-  if (!section) return "<p>Rooms section bulunamadı.</p>";
-  const sectionIndex = state.data.sections.indexOf(section);
   return `
     <div class="admin-card">
       <div class="admin-row__header">
-        <h3>Oda kartları</h3>
+        <div>
+          <h3>Oda kataloğu</h3>
+          <p>Bu alan Supabase <code>rooms</code> ve <code>room_images</code> tablolarına kaydedilir. Ana sitedeki Odalar listesi buradan beslenir.</p>
+        </div>
         <button class="button button--dark" type="button" data-add-room>Oda ekle</button>
       </div>
-      ${(section.items || [])
+      ${(state.rooms || [])
         .map((room, index) => `
           <div class="admin-row">
             <div class="admin-row__header">
-              <h3>${index + 1}. ${escapeHtml(room.name?.tr || "Oda")}</h3>
+              <h3>${index + 1}. ${escapeHtml(t(room.title) || "Oda")}</h3>
               <div class="admin-actions">
                 <button class="button button--muted" type="button" data-move-room="${index}" data-dir="-1">Yukarı</button>
                 <button class="button button--muted" type="button" data-move-room="${index}" data-dir="1">Aşağı</button>
@@ -1073,11 +1277,18 @@ function renderRoomsAdmin() {
               </div>
             </div>
             <div class="admin-grid">
-              ${input("İsim TR", `sections.${sectionIndex}.items.${index}.name.tr`, room.name?.tr)}
-              ${input("İsim EN", `sections.${sectionIndex}.items.${index}.name.en`, room.name?.en)}
-              ${textarea("Açıklama TR", `sections.${sectionIndex}.items.${index}.desc.tr`, room.desc?.tr)}
-              ${textarea("Açıklama EN", `sections.${sectionIndex}.items.${index}.desc.en`, room.desc?.en)}
-              ${mediaSelect("Oda görseli", `sections.${sectionIndex}.items.${index}.image`, room.image)}
+              ${roomLocalizedInputs("Oda adı", `${index}.title`, room.title)}
+              ${roomLocalizedInputs("Kısa açıklama", `${index}.short_description`, room.short_description, true)}
+              ${roomLocalizedInputs("Detay açıklaması", `${index}.description`, room.description, true)}
+              ${roomLocalizedInputs("Konum etiketi", `${index}.location_label`, room.location_label)}
+              ${roomInput("Slug", `${index}.slug`, room.slug)}
+              ${roomInput("Sıra", `${index}.sort_order`, room.sort_order || index * 10, "number")}
+              ${roomInput("Misafir", `${index}.details.guests`, room.details?.guests || 2, "number")}
+              ${roomInput("Yatak bilgisi", `${index}.details.beds`, room.details?.beds)}
+              ${roomInput("Banyo bilgisi", `${index}.details.bath`, room.details?.bath)}
+              ${roomTextarea("Olanaklar (virgülle ayır)", `${index}.amenitiesText`, Array.isArray(room.amenities) ? room.amenities.join(", ") : "")}
+              ${roomMediaSelect("Kapak görseli", `${index}.cover_image_url`, room.cover_image_url)}
+              ${roomMediaSelect("Detay galeri görseli 1", `${index}.images.0.image_url`, room.images?.[0]?.image_url || room.cover_image_url)}
             </div>
           </div>
         `)
@@ -1313,6 +1524,7 @@ async function loadMedia() {
 
 async function saveSite(message = "Supabase'e kaydedildi.") {
   if (!isAllowedAdmin()) throw new Error("Bu e-posta admin allowlist içinde değil.");
+  await saveRoomsCatalog();
   state.data.updatedAt = new Date().toISOString();
   await supabaseRequest(`/rest/v1/site_documents?id=eq.${encodeURIComponent(supabaseDocumentId)}`, {
     method: "PATCH",
@@ -1327,6 +1539,86 @@ async function saveSite(message = "Supabase'e kaydedildi.") {
   renderSite();
   renderAdmin();
   showAdminMessage(message);
+}
+
+function roomPayload(room, index) {
+  const amenities = Array.isArray(room.amenities)
+    ? room.amenities
+    : String(room.amenitiesText || "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+  const title = room.title || {};
+  return {
+    slug: room.slug || slugify(title.tr || title.en || `oda-${index + 1}`),
+    title,
+    short_description: room.short_description || {},
+    description: room.description || room.short_description || {},
+    location_label: room.location_label || { tr: "FoÃ§a bÃ¶lgesinde oda", en: "Room in Foca" },
+    details: room.details || {},
+    amenities,
+    cover_image_url: room.cover_image_url || room.images?.[0]?.image_url || "",
+    status: room.status || "published",
+    sort_order: Number(room.sort_order || index * 10),
+  };
+}
+
+async function saveRoomsCatalog() {
+  if (!hasSupabaseConfig()) return;
+  for (const id of state.removedRoomIds) {
+    await supabaseRequest(`/rest/v1/rooms?id=eq.${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: { Prefer: "return=minimal" },
+    });
+  }
+  state.removedRoomIds = [];
+
+  for (const [index, room] of state.rooms.entries()) {
+    const payload = roomPayload(room, index);
+    let saved;
+    if (room.id && !String(room.id).startsWith("fallback-") && !String(room.id).startsWith("local-")) {
+      saved = await supabaseRequest(`/rest/v1/rooms?id=eq.${encodeURIComponent(room.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Prefer: "return=representation" },
+        body: JSON.stringify(payload),
+      });
+    } else {
+      saved = await supabaseRequest("/rest/v1/rooms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Prefer: "return=representation" },
+        body: JSON.stringify(payload),
+      });
+    }
+    const savedRoom = saved?.[0];
+    if (!savedRoom?.id) continue;
+    room.id = savedRoom.id;
+    room.slug = savedRoom.slug;
+    room.cover_image_url = savedRoom.cover_image_url;
+    room.amenities = payload.amenities;
+
+    const imageUrls = [payload.cover_image_url, ...(room.images || []).map((image) => image.image_url)].filter(Boolean);
+    const uniqueImages = [...new Set(imageUrls)];
+    await supabaseRequest(`/rest/v1/room_images?room_id=eq.${encodeURIComponent(savedRoom.id)}`, {
+      method: "DELETE",
+      headers: { Prefer: "return=minimal" },
+    });
+    if (uniqueImages.length) {
+      await supabaseRequest("/rest/v1/room_images", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Prefer: "return=minimal" },
+        body: JSON.stringify(
+          uniqueImages.map((url, imageIndex) => ({
+            room_id: savedRoom.id,
+            image_url: url,
+            alt: savedRoom.title,
+            sort_order: (imageIndex + 1) * 10,
+            is_cover: imageIndex === 0,
+          }))
+        ),
+      });
+    }
+  }
+  await loadRoomsCatalog();
 }
 
 async function uploadMediaFiles(files) {
@@ -1392,7 +1684,29 @@ async function uploadMediaFiles(files) {
   }
 }
 
+document.addEventListener("click", (event) => {
+  const open = event.target.closest("[data-open-room]");
+  if (open) {
+    openRoomDetail(open.dataset.openRoom);
+    return;
+  }
+  const close = event.target.closest("[data-close-room]");
+  if (close) {
+    closeRoomDetail();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeRoomDetail();
+});
+
 adminContent.addEventListener("input", (event) => {
+  const roomPath = event.target.dataset.roomPath;
+  if (roomPath) {
+    setRoomValue(roomPath, normalizeValue(event.target.value));
+    renderSite();
+    return;
+  }
   const path = event.target.dataset.path;
   if (!path) return;
   if (event.target.matches("select,input[type='color']")) return;
@@ -1404,6 +1718,13 @@ adminContent.addEventListener("input", (event) => {
 adminContent.addEventListener(
   "blur",
   (event) => {
+    const roomPath = event.target.dataset.roomPath;
+    if (roomPath && event.target.matches("input,textarea")) {
+      setRoomValue(roomPath, normalizeValue(event.target.value));
+      renderSite();
+      renderAdmin();
+      return;
+    }
     const path = event.target.dataset.path;
     if (!path) return;
     if (event.target.matches("input,textarea")) {
@@ -1420,7 +1741,7 @@ adminContent.addEventListener("click", async (event) => {
   if (!target || !adminContent.contains(target)) return;
   if (target.dataset.openMediaPicker !== undefined) {
     const label = target.closest(".media-choice")?.querySelector(".admin-field-label")?.textContent || "Görsel seç";
-    state.mediaPicker = { path: target.dataset.path, label };
+    state.mediaPicker = target.dataset.roomMediaPath ? { roomPath: target.dataset.roomMediaPath, label } : { path: target.dataset.path, label };
     state.mediaPickerLimit = 10;
     renderAdmin();
     return;
@@ -1433,8 +1754,13 @@ adminContent.addEventListener("click", async (event) => {
   }
   if (target.dataset.pickMedia !== undefined) {
     const file = state.media[Number(target.dataset.pickMedia)];
-    if (file?.path && state.mediaPicker?.path) {
-      setValue(state.mediaPicker.path, file.path, { render: true });
+    if (file?.path && (state.mediaPicker?.path || state.mediaPicker?.roomPath)) {
+      if (state.mediaPicker.roomPath) {
+        setRoomValue(state.mediaPicker.roomPath, file.path);
+        renderSite();
+      } else {
+        setValue(state.mediaPicker.path, file.path, { render: true });
+      }
       state.mediaPicker = null;
       renderAdmin();
       try {
@@ -1456,8 +1782,25 @@ adminContent.addEventListener("click", async (event) => {
     return;
   }
   if (target.dataset.addRoom !== undefined) {
-    const rooms = state.data.sections.find((section) => section.type === "rooms");
-    rooms.items.push({ name: { tr: "Yeni Oda", en: "New Room" }, desc: { tr: "Kısa açıklama.", en: "Short description." }, image: state.media[0]?.path || "assets/images/room-balcony-sea.webp", alt: { tr: "Oda", en: "Room" } });
+    const image = state.media[0]?.path || "";
+    const next = state.rooms.length + 1;
+    state.rooms.push({
+      id: `local-${Date.now()}`,
+      slug: `oda-${next}`,
+      title: { tr: "Yeni Oda", en: "New Room" },
+      short_description: { tr: "KÄ±sa aÃ§Ä±klama.", en: "Short description." },
+      description: { tr: "Oda detay aÃ§Ä±klamasÄ±.", en: "Room detail description." },
+      location_label: { tr: "FoÃ§a bÃ¶lgesinde oda", en: "Room in Foca" },
+      details: { guests: 2, beds: "1 Ã§ift kiÅŸilik yatak", bath: "Ã–zel banyo" },
+      amenities: ["Klima", "Wi-Fi", "Ã–zel banyo"],
+      cover_image_url: image,
+      images: image ? [{ image_url: image, alt: { tr: "Oda", en: "Room" }, is_cover: true, sort_order: 10 }] : [],
+      status: "published",
+      sort_order: next * 10,
+    });
+    renderSite();
+    renderAdmin();
+    return;
   }
   if (target.dataset.addGallery !== undefined) {
     const gallery = state.data.sections.find((section) => section.type === "gallery");
@@ -1502,9 +1845,17 @@ adminContent.addEventListener("click", async (event) => {
     }
     return;
   }
-  if (target.dataset.removeRoom !== undefined) state.data.sections.find((section) => section.type === "rooms").items.splice(Number(target.dataset.removeRoom), 1);
+  if (target.dataset.removeRoom !== undefined) {
+    const removed = state.rooms.splice(Number(target.dataset.removeRoom), 1)[0];
+    if (removed?.id && !String(removed.id).startsWith("local-") && !String(removed.id).startsWith("fallback-")) state.removedRoomIds.push(removed.id);
+  }
   if (target.dataset.removeGallery !== undefined) state.data.sections.find((section) => section.type === "gallery").items.splice(Number(target.dataset.removeGallery), 1);
-  if (target.dataset.moveRoom !== undefined) swap(state.data.sections.find((section) => section.type === "rooms").items, Number(target.dataset.moveRoom), Number(target.dataset.dir));
+  if (target.dataset.moveRoom !== undefined) {
+    swap(state.rooms, Number(target.dataset.moveRoom), Number(target.dataset.dir));
+    state.rooms.forEach((room, index) => {
+      room.sort_order = (index + 1) * 10;
+    });
+  }
   if (target.dataset.moveGallery !== undefined) swap(state.data.sections.find((section) => section.type === "gallery").items, Number(target.dataset.moveGallery), Number(target.dataset.dir));
   if (target.dataset.moveSection !== undefined) {
     const current = state.data.sections[Number(target.dataset.moveSection)];
@@ -1570,7 +1921,7 @@ adminContent.addEventListener("scroll", (event) => {
   if (!panel || !state.mediaPicker) return;
   const nearBottom = panel.scrollTop + panel.clientHeight >= panel.scrollHeight - 160;
   if (!nearBottom || state.mediaPickerLimit >= state.media.length) return;
-  const current = getValue(state.mediaPicker.path);
+  const current = state.mediaPicker.roomPath ? getRoomValue(state.mediaPicker.roomPath) : getValue(state.mediaPicker.path);
   const from = state.mediaPickerLimit;
   const to = Math.min(from + 10, state.media.length);
   const grid = panel.querySelector(".media-picker__grid");
