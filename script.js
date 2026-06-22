@@ -490,6 +490,14 @@ function closeRoomDetail() {
   document.body.classList.remove("room-detail-open");
 }
 
+function moveRoomSlider(slug, direction) {
+  const detail = $(`[data-room-detail="${CSS.escape(slug)}"]`);
+  const track = detail?.querySelector("[data-room-slider-track]");
+  if (!track) return;
+  const amount = direction * track.clientWidth;
+  track.scrollBy({ left: amount, behavior: "smooth" });
+}
+
 function updateMeta() {
   const title = state.data.meta?.title || fallbackData.meta.title;
   const description = state.data.meta?.description || fallbackData.meta.description;
@@ -573,17 +581,21 @@ function roomDetail(room) {
       <div class="room-detail__backdrop" data-close-room></div>
       <article class="room-detail__panel" role="dialog" aria-modal="true" aria-label="${escapeHtml(t(room.title))}">
         <button class="room-detail__close" type="button" data-close-room aria-label="${state.activeLang === "tr" ? "Oda detayını kapat" : "Close room detail"}">×</button>
-        <div class="room-detail__gallery">
+        <div class="room-detail__slider">
+          <button class="room-detail__arrow room-detail__arrow--prev" type="button" data-room-slide="${escapeHtml(room.slug)}" data-dir="-1" aria-label="${state.activeLang === "tr" ? "Önceki görsel" : "Previous image"}">‹</button>
+          <div class="room-detail__track" data-room-slider-track>
           ${images
-            .slice(0, 5)
             .map(
               (image, index) => `
-                <figure class="${index === 0 ? "is-large" : ""}">
+                <figure class="room-detail__slide">
                   <img class="site-image" src="${escapeHtml(image.image_url)}" alt="${escapeHtml(t(image.alt) || t(room.title))}" loading="lazy" decoding="async">
+                  <figcaption>${index + 1} / ${images.length}</figcaption>
                 </figure>
               `
             )
             .join("")}
+          </div>
+          <button class="room-detail__arrow room-detail__arrow--next" type="button" data-room-slide="${escapeHtml(room.slug)}" data-dir="1" aria-label="${state.activeLang === "tr" ? "Sonraki görsel" : "Next image"}">›</button>
         </div>
         <div class="room-detail__content">
           <div>
@@ -1865,6 +1877,11 @@ async function uploadMediaFiles(files) {
 }
 
 document.addEventListener("click", (event) => {
+  const slide = event.target.closest("[data-room-slide]");
+  if (slide) {
+    moveRoomSlider(slide.dataset.roomSlide, Number(slide.dataset.dir || 1));
+    return;
+  }
   const open = event.target.closest("[data-open-room]");
   if (open) {
     openRoomDetail(open.dataset.openRoom);
