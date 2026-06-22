@@ -168,72 +168,24 @@ function storagePublicUrl(path) {
   return `${supabaseUrl}/storage/v1/object/public/${supabaseMediaBucket}/${path}`;
 }
 
-function storageRenderUrl(path, options = {}) {
+function storageThumbnailUrl(path, width = 360, height = 260, quality = 35) {
   if (!path || !supabaseUrl) return path;
   const publicPrefix = `${supabaseUrl}/storage/v1/object/public/${supabaseMediaBucket}/`;
   if (!String(path).startsWith(publicPrefix)) return path;
   const objectPath = String(path).slice(publicPrefix.length);
-  const params = new URLSearchParams();
-  if (options.width) params.set("width", String(options.width));
-  if (options.height) params.set("height", String(options.height));
-  if (options.resize) params.set("resize", options.resize);
-  params.set("quality", String(options.quality || 70));
+  const params = new URLSearchParams({
+    width: String(width),
+    height: String(height),
+    resize: "cover",
+    quality: String(quality),
+  });
   return `${supabaseUrl}/storage/v1/render/image/public/${supabaseMediaBucket}/${objectPath}?${params}`;
-}
-
-function storageThumbnailUrl(path, width = 360, height = 260, quality = 35) {
-  return storageRenderUrl(path, { width, height, resize: "cover", quality });
 }
 
 function adminImage(src, alt = "", width = 360, height = 260) {
   const full = src || "";
   const thumb = storageThumbnailUrl(full, width, height);
   return `<img src="${escapeHtml(thumb)}" alt="${escapeHtml(alt)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${escapeHtml(full)}';">`;
-}
-
-const publicImagePresets = {
-  hero: {
-    widths: [768, 1280, 1920, 2400],
-    quality: 76,
-    sizes: "100vw",
-    attrs: `class="hero__image" loading="eager" fetchpriority="high" decoding="async"`,
-  },
-  story: {
-    widths: [640, 960, 1280, 1600],
-    quality: 68,
-    sizes: "(max-width: 900px) 100vw, 62vw",
-    attrs: `loading="lazy" decoding="async"`,
-  },
-  room: {
-    widths: [360, 560, 760, 1000],
-    quality: 64,
-    sizes: "(max-width: 900px) 100vw, 33vw",
-    attrs: `loading="lazy" decoding="async"`,
-  },
-  gallery: {
-    widths: [360, 560, 760, 1000],
-    quality: 62,
-    sizes: "(max-width: 900px) 100vw, 33vw",
-    attrs: `loading="lazy" decoding="async"`,
-  },
-  foca: {
-    widths: [640, 960, 1280, 1600],
-    quality: 68,
-    sizes: "(max-width: 900px) 100vw, 55vw",
-    attrs: `loading="lazy" decoding="async"`,
-  },
-};
-
-function publicImage(src, alt = "", presetName = "gallery") {
-  const full = src || "";
-  const preset = publicImagePresets[presetName] || publicImagePresets.gallery;
-  const largest = preset.widths[preset.widths.length - 1];
-  const optimized = storageRenderUrl(full, { width: largest, resize: "cover", quality: preset.quality });
-  const srcset = preset.widths
-    .map((width) => `${storageRenderUrl(full, { width, resize: "cover", quality: preset.quality })} ${width}w`)
-    .join(", ");
-  const sourceAttrs = optimized === full ? "" : ` srcset="${escapeHtml(srcset)}" sizes="${escapeHtml(preset.sizes)}"`;
-  return `<img ${preset.attrs} src="${escapeHtml(optimized)}"${sourceAttrs} alt="${escapeHtml(alt)}" onerror="this.onerror=null;this.src='${escapeHtml(full)}';this.removeAttribute('srcset');">`;
 }
 
 function safeUploadName(fileName) {
@@ -406,7 +358,7 @@ function renderHero(section) {
   const content = section.content || {};
   return `
     <section class="hero" id="hero" aria-label="Paska Otel">
-      ${publicImage(content.image, t(content.alt), "hero")}
+      <img class="hero__image" src="${escapeHtml(content.image)}" alt="${escapeHtml(t(content.alt))}" />
       <div class="hero__shade"></div>
       <div class="hero__content reveal">
         <p class="eyebrow">${escapeHtml(t(content.eyebrow))}</p>
@@ -448,7 +400,7 @@ function renderStory(section) {
           return `
             <article class="story-block ${layoutClass} reveal">
               <div class="story-block__image" style="${escapeHtml(imageStyle)}">
-                ${publicImage(item.image, t(item.alt), "story")}
+                <img src="${escapeHtml(item.image)}" alt="${escapeHtml(t(item.alt))}" loading="lazy">
               </div>
               <div class="story-block__copy">
                 <p class="eyebrow">${escapeHtml(t(item.eyebrow))}</p>
@@ -473,7 +425,7 @@ function renderRooms(section) {
           .map(
             (room) => `
               <article class="room-card reveal">
-                <div class="room-card__image">${publicImage(room.image, t(room.alt), "room")}</div>
+                <div class="room-card__image"><img src="${escapeHtml(room.image)}" alt="${escapeHtml(t(room.alt))}" loading="lazy"></div>
                 <div class="room-card__copy">
                   <h3>${escapeHtml(t(room.name))}</h3>
                   <p>${escapeHtml(t(room.desc))}</p>
@@ -496,7 +448,7 @@ function renderGallery(section) {
           .map(
             (item) => `
               <figure class="masonry__item reveal" style="--ratio: ${escapeHtml(item.ratio || "4 / 5")}">
-                ${publicImage(item.image, t(item.label), "gallery")}
+                <img src="${escapeHtml(item.image)}" alt="${escapeHtml(t(item.label))}" loading="lazy">
                 <span>${escapeHtml(t(item.label))}</span>
               </figure>
             `
@@ -512,7 +464,7 @@ function renderFoca(section) {
   const content = section.content || {};
   return `
     <section class="${sectionClass(section, `foca ${layout}`)}" id="foca" ${styleVars(section)}>
-      <div class="foca__image reveal">${publicImage(content.image, t(content.alt), "foca")}</div>
+      <div class="foca__image reveal"><img src="${escapeHtml(content.image)}" alt="${escapeHtml(t(content.alt))}" loading="lazy" /></div>
       <div class="foca__copy reveal">
         <p class="eyebrow">${escapeHtml(t(content.eyebrow))}</p>
         <h2>${escapeHtml(t(content.title))}</h2>
