@@ -59,7 +59,14 @@ const adminPanel = $("[data-admin-panel]");
 const adminContent = $("[data-admin-content]");
 const adminTabs = $("[data-admin-tabs]");
 const loginMessage = $("[data-login-message]");
+const siteLoader = $("[data-site-loader]");
+const loaderMark = $("[data-loader-mark]");
 let toastTimer = null;
+let loaderTimer = null;
+let loaderHidden = false;
+const loaderStartedAt = Date.now();
+const minLoaderTime = 900;
+const maxHeroWait = 5000;
 
 const adminSections = [
   ["dashboard", "Özet"],
@@ -311,6 +318,46 @@ function brandMarkup(brand = state.data.brand || {}) {
   `;
 }
 
+function updateSiteLoaderBrand() {
+  if (!loaderMark) return;
+  const brand = state.data.brand || {};
+  const name = brand.name || "Paska";
+  loaderMark.innerHTML = brand.logo
+    ? `<img src="${escapeHtml(brand.logo)}" alt="${escapeHtml(name || "Paska Otel logosu")}" decoding="async">`
+    : `<span class="site-loader__fallback">${escapeHtml(name || "Paska")}</span>`;
+}
+
+function hideSiteLoader() {
+  if (!siteLoader || loaderHidden) return;
+  loaderHidden = true;
+  window.clearTimeout(loaderTimer);
+  const wait = Math.max(0, minLoaderTime - (Date.now() - loaderStartedAt));
+  window.setTimeout(() => {
+    siteLoader.classList.add("is-hidden");
+    window.setTimeout(() => {
+      siteLoader.hidden = true;
+    }, 760);
+  }, wait);
+}
+
+function waitForHeroThenHideLoader() {
+  if (!siteLoader || loaderHidden) return;
+  const heroImage = $(".hero__image");
+  if (!heroImage) {
+    hideSiteLoader();
+    return;
+  }
+  const done = () => hideSiteLoader();
+  if (heroImage.complete) {
+    done();
+    return;
+  }
+  heroImage.addEventListener("load", done, { once: true });
+  heroImage.addEventListener("error", done, { once: true });
+  window.clearTimeout(loaderTimer);
+  loaderTimer = window.setTimeout(done, maxHeroWait);
+}
+
 function updateMeta() {
   const title = state.data.meta?.title || fallbackData.meta.title;
   const description = state.data.meta?.description || fallbackData.meta.description;
@@ -524,6 +571,7 @@ function renderSite() {
   renderTheme();
   updateMeta();
   renderNav();
+  updateSiteLoaderBrand();
   siteRoot.innerHTML = sortedSections().map(renderSection).join("");
   footerRoot.innerHTML = `<p>${escapeHtml(state.data.footer?.left || "")}</p><p>${escapeHtml(state.data.footer?.right || "")}</p>`;
   revealOnScroll();
@@ -543,6 +591,7 @@ async function loadSiteContent() {
     state.data = response.ok ? await response.json() : structuredClone(fallbackData);
   }
   renderSite();
+  waitForHeroThenHideLoader();
 }
 
 function showAdminMessage(message, type = "success") {
