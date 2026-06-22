@@ -1029,6 +1029,227 @@ textarea {
   align-items: center;
 }
 
+.rooms-admin {
+  gap: 22px;
+}
+
+.room-admin-card {
+  gap: 22px;
+  border-color: rgba(13, 63, 85, 0.12);
+}
+
+.room-admin-heading {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 14px;
+  align-items: center;
+}
+
+.room-admin-heading .eyebrow {
+  margin-bottom: 6px;
+}
+
+.room-admin-heading small {
+  color: var(--gray);
+  word-break: break-word;
+}
+
+.room-admin-thumb {
+  width: 96px;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--sand);
+}
+
+.room-admin-thumb span {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: var(--gray);
+  font-weight: 800;
+}
+
+.room-admin-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.room-admin-block {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbf8f2;
+}
+
+.room-admin-block--wide {
+  grid-column: 1 / -1;
+}
+
+.room-admin-block h4,
+.room-admin-block__title h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.room-admin-block__title {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.room-admin-block__title p {
+  margin: 5px 0 0;
+  color: var(--gray);
+}
+
+.room-gallery-admin {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.room-gallery-admin__item {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.room-gallery-admin__pick {
+  width: 100%;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--white);
+  cursor: pointer;
+}
+
+.room-gallery-admin__pick img,
+.room-gallery-admin__pick .media-choice__empty {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 0;
+}
+
+.room-gallery-admin__meta,
+.room-gallery-admin__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.room-gallery-admin__meta {
+  justify-content: space-between;
+  color: var(--gray);
+  font-size: 0.78rem;
+}
+
+.room-gallery-admin__meta strong,
+.room-gallery-admin__meta button,
+.room-gallery-admin__actions button {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 8px;
+  color: var(--blue);
+  background: var(--white);
+  font-size: 0.68rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.room-gallery-admin__meta strong {
+  color: var(--white);
+  background: var(--blue);
+}
+
+.room-gallery-admin__empty {
+  grid-column: 1 / -1;
+  padding: 28px;
+  border: 1px dashed rgba(30, 42, 47, 0.18);
+  border-radius: 8px;
+  color: var(--gray);
+  text-align: center;
+}
+
+.amenity-preset-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.amenity-chip {
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  background: var(--white);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.amenity-chip.is-active {
+  color: var(--white);
+  background: var(--blue);
+  border-color: var(--blue);
+}
+
+.room-admin-custom-amenity {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.room-admin-custom-amenity input {
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 14px;
+  background: var(--white);
+}
+
+.room-admin-selected {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.room-admin-selected span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 8px 0 12px;
+  border-radius: 999px;
+  color: var(--blue);
+  background: rgba(13, 63, 85, 0.09);
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.room-admin-selected button {
+  width: 22px;
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 50%;
+  color: var(--blue);
+  background: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+}
+
+.room-admin-selected small {
+  color: var(--gray);
+}
+
 .admin-message {
   min-height: 22px;
   margin: 0;
@@ -1870,6 +2091,8 @@ textarea {
 
   .admin-hero-card,
   .admin-row__header,
+  .room-admin-layout,
+  .room-admin-custom-amenity,
   .admin-media-field,
   .media-choice__button,
   .media-picker__header,
@@ -1878,6 +2101,18 @@ textarea {
   .upload-progress {
     grid-template-columns: 1fr;
     display: grid;
+  }
+
+  .room-admin-heading {
+    grid-template-columns: 72px 1fr;
+  }
+
+  .room-admin-thumb {
+    width: 72px;
+  }
+
+  .room-gallery-admin {
+    grid-template-columns: 1fr;
   }
 
   .media-choice__button img,

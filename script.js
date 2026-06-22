@@ -70,6 +70,23 @@ const loaderStartedAt = Date.now();
 const minLoaderTime = 900;
 const maxHeroWait = 5000;
 const warmedImageUrls = new Set();
+const roomAmenityPresets = [
+  { tr: "Havuz", en: "Pool" },
+  { tr: "Jakuzi", en: "Jacuzzi" },
+  { tr: "Şömine", en: "Fireplace" },
+  { tr: "Klima", en: "Air conditioning" },
+  { tr: "Wifi", en: "Wifi" },
+  { tr: "Televizyon", en: "Television" },
+  { tr: "Mülk içinde ücretsiz otopark", en: "Free parking on premises" },
+  { tr: "İlk yardım çantası", en: "First aid kit" },
+  { tr: "Yangın söndürücü", en: "Fire extinguisher" },
+  { tr: "Çamaşır makinesi", en: "Washer" },
+  { tr: "Deniz manzarası", en: "Sea view" },
+  { tr: "Balkon", en: "Balcony" },
+  { tr: "Teras", en: "Terrace" },
+  { tr: "Mini bar", en: "Mini bar" },
+  { tr: "Özel banyo", en: "Private bathroom" },
+];
 
 const adminSections = [
   ["dashboard", "Özet"],
@@ -866,6 +883,18 @@ function setRoomValue(path, value) {
     cursor = cursor[key];
   });
   cursor[keys.at(-1)] = value;
+  if (path.endsWith(".cover_image_url")) {
+    const roomIndex = Number(path.split(".")[0]);
+    const room = state.rooms[roomIndex];
+    if (room && value && !room.images?.some((image) => image.image_url === value)) {
+      room.images ??= [];
+      room.images.unshift({ image_url: value, alt: room.title || { tr: "Oda", en: "Room" }, sort_order: 10, is_cover: true });
+      room.images.forEach((image, index) => {
+        image.sort_order = (index + 1) * 10;
+        image.is_cover = index === 0;
+      });
+    }
+  }
 }
 
 function roomInput(label, path, value, type = "text") {
@@ -896,6 +925,90 @@ function roomMediaSelect(label, path, value, help = "") {
         </button>
         ${help ? `<small>${escapeHtml(help)}</small>` : ""}
         ${image ? `<code>${escapeHtml(image)}</code>` : ""}
+      </div>
+    </div>
+  `;
+}
+
+function amenityKey(item) {
+  return typeof item === "string" ? item : item?.tr || item?.en || "";
+}
+
+function amenityText(item) {
+  return t(item) || amenityKey(item);
+}
+
+function roomAmenitiesEditor(room, index) {
+  const amenities = Array.isArray(room.amenities) ? room.amenities : [];
+  const selected = new Set(amenities.map(amenityKey));
+  return `
+    <div class="room-admin-block room-admin-block--wide">
+      <div class="room-admin-block__title">
+        <div>
+          <h4>Olanaklar</h4>
+          <p>Odaya ait özellikleri hazır seçeneklerden ekleyebilir veya özel bir olanak yazabilirsin.</p>
+        </div>
+      </div>
+      <div class="amenity-preset-grid">
+        ${roomAmenityPresets
+          .map((amenity) => {
+            const key = amenityKey(amenity);
+            const active = selected.has(key);
+            return `<button class="amenity-chip ${active ? "is-active" : ""}" type="button" data-toggle-room-amenity="${index}" data-amenity-tr="${escapeHtml(amenity.tr)}" data-amenity-en="${escapeHtml(amenity.en)}">${escapeHtml(t(amenity))}</button>`;
+          })
+          .join("")}
+      </div>
+      <div class="room-admin-custom-amenity">
+        <input type="text" data-room-custom-amenity="${index}" placeholder="Örn. Şömineli oda, jakuzili oda">
+        <button class="button button--muted" type="button" data-add-custom-amenity="${index}">Özellik ekle</button>
+      </div>
+      <div class="room-admin-selected">
+        ${
+          amenities.length
+            ? amenities.map((amenity, amenityIndex) => `<span>${escapeHtml(amenityText(amenity))}<button type="button" data-remove-room-amenity="${index}" data-amenity-index="${amenityIndex}" aria-label="Özelliği kaldır">×</button></span>`).join("")
+            : `<small>Henüz özellik eklenmedi.</small>`
+        }
+      </div>
+    </div>
+  `;
+}
+
+function roomGalleryEditor(room, index) {
+  const images = room.images?.length ? room.images : [];
+  return `
+    <div class="room-admin-block room-admin-block--wide">
+      <div class="room-admin-block__title">
+        <div>
+          <h4>Oda galerisi</h4>
+          <p>Müşteri oda detayına bastığında bu görseller galeri olarak görünür.</p>
+        </div>
+        <button class="button button--dark" type="button" data-add-room-image="${index}">Galeri görseli ekle</button>
+      </div>
+      <div class="room-gallery-admin">
+        ${
+          images.length
+            ? images
+                .map(
+                  (image, imageIndex) => `
+                    <div class="room-gallery-admin__item">
+                      <button class="room-gallery-admin__pick" type="button" data-open-media-picker data-room-media-path="${index}.images.${imageIndex}.image_url">
+                        ${image.image_url ? adminImage(image.image_url, "", 360, 260) : `<span class="media-choice__empty">Görsel seç</span>`}
+                      </button>
+                      <div class="room-gallery-admin__meta">
+                        <span>${imageIndex + 1}. görsel</span>
+                        ${room.cover_image_url === image.image_url ? `<strong>Kapak</strong>` : `<button type="button" data-set-room-cover="${index}" data-image-index="${imageIndex}">Kapak yap</button>`}
+                      </div>
+                      <div class="room-gallery-admin__actions">
+                        <button type="button" data-move-room-image="${index}" data-image-index="${imageIndex}" data-dir="-1">Yukarı</button>
+                        <button type="button" data-move-room-image="${index}" data-image-index="${imageIndex}" data-dir="1">Aşağı</button>
+                        <button type="button" data-remove-room-image="${index}" data-image-index="${imageIndex}">Sil</button>
+                      </div>
+                    </div>
+                  `
+                )
+                .join("")
+            : `<div class="room-gallery-admin__empty">Henüz galeri görseli eklenmedi.</div>`
+        }
       </div>
     </div>
   `;
@@ -1297,6 +1410,73 @@ function renderRoomsAdmin() {
   `;
 }
 
+function renderRoomsAdminPro() {
+  return `
+    <div class="admin-card rooms-admin">
+      <div class="admin-row__header">
+        <div>
+          <h3>Oda katalogu</h3>
+          <p>Oda isimleri, detay metinleri, galeri gorselleri ve ozellikler Supabase oda tablolarina kaydedilir.</p>
+        </div>
+        <button class="button button--dark" type="button" data-add-room>Oda ekle</button>
+      </div>
+      ${(state.rooms || [])
+        .map((room, index) => `
+          <div class="admin-row room-admin-card">
+            <div class="admin-row__header">
+              <div class="room-admin-heading">
+                <div class="room-admin-thumb">${roomCover(room) ? adminImage(roomCover(room), t(room.title), 180, 140) : `<span>Oda</span>`}</div>
+                <div>
+                  <p class="eyebrow">Oda ${index + 1}</p>
+                  <h3>${escapeHtml(t(room.title) || "Oda")}</h3>
+                  <small>${escapeHtml(room.slug || "")}</small>
+                </div>
+              </div>
+              <div class="admin-actions">
+                <button class="button button--muted" type="button" data-move-room="${index}" data-dir="-1">Yukari</button>
+                <button class="button button--muted" type="button" data-move-room="${index}" data-dir="1">Asagi</button>
+                <button class="button button--muted" type="button" data-remove-room="${index}">Sil</button>
+              </div>
+            </div>
+            <div class="room-admin-layout">
+              <div class="room-admin-block">
+                <h4>Temel bilgiler</h4>
+                <div class="admin-grid">
+                  ${roomLocalizedInputs("Oda adi", `${index}.title`, room.title)}
+                  ${roomLocalizedInputs("Konum etiketi", `${index}.location_label`, room.location_label)}
+                  ${roomInput("Slug", `${index}.slug`, room.slug)}
+                  ${roomInput("Sira", `${index}.sort_order`, room.sort_order || index * 10, "number")}
+                </div>
+              </div>
+              <div class="room-admin-block">
+                <h4>Kapasite</h4>
+                <div class="admin-grid">
+                  ${roomInput("Misafir", `${index}.details.guests`, room.details?.guests || 2, "number")}
+                  ${roomInput("Yatak bilgisi", `${index}.details.beds`, room.details?.beds)}
+                  ${roomInput("Banyo bilgisi", `${index}.details.bath`, room.details?.bath)}
+                </div>
+              </div>
+              <div class="room-admin-block room-admin-block--wide">
+                <h4>Metinler</h4>
+                <div class="admin-grid">
+                  ${roomLocalizedInputs("Kisa aciklama", `${index}.short_description`, room.short_description, true)}
+                  ${roomLocalizedInputs("Detay aciklamasi", `${index}.description`, room.description, true)}
+                </div>
+              </div>
+              <div class="room-admin-block">
+                <h4>Kapak gorseli</h4>
+                ${roomMediaSelect("Kapak gorseli", `${index}.cover_image_url`, room.cover_image_url, "Liste kartinda ve oda detayinda ilk gorsel olarak kullanilir.")}
+              </div>
+              ${roomGalleryEditor(room, index)}
+              ${roomAmenitiesEditor(room, index)}
+            </div>
+          </div>
+        `)
+        .join("")}
+    </div>
+  `;
+}
+
 function renderGalleryAdmin() {
   const section = state.data.sections.find((item) => item.type === "gallery");
   if (!section) return "<p>Gallery section bulunamadı.</p>";
@@ -1478,7 +1658,7 @@ function renderAdmin() {
     site: renderSiteAdmin,
     sections: renderSectionsAdmin,
     content: renderContentAdmin,
-    rooms: renderRoomsAdmin,
+    rooms: renderRoomsAdminPro,
     gallery: renderGalleryAdmin,
     media: renderMediaAdmin,
     theme: renderThemeAdmin,
@@ -1736,7 +1916,7 @@ adminContent.addEventListener(
 
 adminContent.addEventListener("click", async (event) => {
   const target = event.target.closest(
-    "[data-open-media-picker], [data-close-media-picker], [data-pick-media], [data-clear-upload], [data-color-preset], [data-add-room], [data-add-gallery], [data-add-story], [data-remove-story], [data-move-story], [data-copy-media], [data-delete-media], [data-remove-room], [data-remove-gallery], [data-move-room], [data-move-gallery], [data-move-section]"
+    "[data-open-media-picker], [data-close-media-picker], [data-pick-media], [data-clear-upload], [data-color-preset], [data-add-room], [data-add-gallery], [data-add-story], [data-remove-story], [data-move-story], [data-copy-media], [data-delete-media], [data-remove-room], [data-remove-gallery], [data-move-room], [data-move-gallery], [data-move-section], [data-add-room-image], [data-remove-room-image], [data-move-room-image], [data-set-room-cover], [data-toggle-room-amenity], [data-add-custom-amenity], [data-remove-room-amenity]"
   );
   if (!target || !adminContent.contains(target)) return;
   if (target.dataset.openMediaPicker !== undefined) {
@@ -1798,6 +1978,89 @@ adminContent.addEventListener("click", async (event) => {
       status: "published",
       sort_order: next * 10,
     });
+    renderSite();
+    renderAdmin();
+    return;
+  }
+  if (target.dataset.addRoomImage !== undefined) {
+    const roomIndex = Number(target.dataset.addRoomImage);
+    const room = state.rooms[roomIndex];
+    if (!room) return;
+    room.images ??= [];
+    room.images.push({ image_url: "", alt: room.title || { tr: "Oda", en: "Room" }, sort_order: (room.images.length + 1) * 10, is_cover: false });
+    renderSite();
+    renderAdmin();
+    return;
+  }
+  if (target.dataset.removeRoomImage !== undefined) {
+    const roomIndex = Number(target.dataset.removeRoomImage);
+    const imageIndex = Number(target.dataset.imageIndex);
+    const room = state.rooms[roomIndex];
+    if (!room?.images) return;
+    room.images.splice(imageIndex, 1);
+    renderSite();
+    renderAdmin();
+    return;
+  }
+  if (target.dataset.moveRoomImage !== undefined) {
+    const roomIndex = Number(target.dataset.moveRoomImage);
+    const imageIndex = Number(target.dataset.imageIndex);
+    const room = state.rooms[roomIndex];
+    if (!room?.images) return;
+    swap(room.images, imageIndex, Number(target.dataset.dir));
+    room.images.forEach((image, index) => {
+      image.sort_order = (index + 1) * 10;
+    });
+    renderSite();
+    renderAdmin();
+    return;
+  }
+  if (target.dataset.setRoomCover !== undefined) {
+    const roomIndex = Number(target.dataset.setRoomCover);
+    const imageIndex = Number(target.dataset.imageIndex);
+    const room = state.rooms[roomIndex];
+    const image = room?.images?.[imageIndex];
+    if (!room || !image?.image_url) return;
+    room.cover_image_url = image.image_url;
+    room.images.forEach((item, index) => {
+      item.is_cover = index === imageIndex;
+    });
+    renderSite();
+    renderAdmin();
+    return;
+  }
+  if (target.dataset.toggleRoomAmenity !== undefined) {
+    const roomIndex = Number(target.dataset.toggleRoomAmenity);
+    const room = state.rooms[roomIndex];
+    if (!room) return;
+    room.amenities ??= [];
+    const amenity = { tr: target.dataset.amenityTr || "", en: target.dataset.amenityEn || target.dataset.amenityTr || "" };
+    const key = amenityKey(amenity);
+    const existingIndex = room.amenities.findIndex((item) => amenityKey(item) === key);
+    if (existingIndex >= 0) room.amenities.splice(existingIndex, 1);
+    else room.amenities.push(amenity);
+    renderSite();
+    renderAdmin();
+    return;
+  }
+  if (target.dataset.addCustomAmenity !== undefined) {
+    const roomIndex = Number(target.dataset.addCustomAmenity);
+    const room = state.rooms[roomIndex];
+    const input = adminContent.querySelector(`[data-room-custom-amenity="${roomIndex}"]`);
+    const value = input?.value?.trim();
+    if (!room || !value) return;
+    room.amenities ??= [];
+    if (!room.amenities.some((item) => amenityKey(item) === value)) room.amenities.push({ tr: value, en: value });
+    renderSite();
+    renderAdmin();
+    return;
+  }
+  if (target.dataset.removeRoomAmenity !== undefined) {
+    const roomIndex = Number(target.dataset.removeRoomAmenity);
+    const amenityIndex = Number(target.dataset.amenityIndex);
+    const room = state.rooms[roomIndex];
+    if (!room?.amenities) return;
+    room.amenities.splice(amenityIndex, 1);
     renderSite();
     renderAdmin();
     return;
