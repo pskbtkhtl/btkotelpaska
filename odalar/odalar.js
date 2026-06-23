@@ -76,8 +76,22 @@ function renderBrand() {
     ? `<img class="brand__logo" src="${escapeHtml(brand.logo)}" alt="${escapeHtml(brand.name || "Paska Otel")}">`
     : `<span>${escapeHtml(brand.name || "Paska")}</span><small>${escapeHtml(brand.location || "Otel Foca")}</small>`;
   $("[data-rooms-brand]").innerHTML = markup;
-  const loaderBrand = $("[data-rooms-loader-brand]");
-  loaderBrand.innerHTML = brand.logo ? `<img src="${escapeHtml(brand.logo)}" alt="">` : "";
+  const loaderLogo = $("[data-rooms-loader-brand] img");
+  if (loaderLogo) loaderLogo.alt = `${brand.name || "Paska"} Otel logosu`;
+}
+
+function preloadRoomCovers() {
+  const urls = [...new Set(state.rooms.map(roomCover).filter(Boolean))];
+  if (!urls.length) return Promise.resolve();
+
+  const imagesReady = Promise.allSettled(urls.map((url) => new Promise((resolve) => {
+    const image = new Image();
+    image.onload = resolve;
+    image.onerror = resolve;
+    image.src = url;
+  })));
+  const timeout = new Promise((resolve) => window.setTimeout(resolve, 8000));
+  return Promise.race([imagesReady, timeout]);
 }
 
 function roomCard(room) {
@@ -148,8 +162,10 @@ async function load() {
     state.rooms = (section?.items || []).map((item, index) => ({ id: `fallback-${index}`, slug: `oda-${index + 1}`, title: item.name, short_description: item.desc, description: item.desc, cover_image_url: item.image, images: [{ image_url: item.image, alt: item.alt }], amenities: [] }));
   }
   render();
+  await preloadRoomCovers();
   const loader = $("[data-rooms-loader]");
-  window.setTimeout(() => loader.classList.add("is-hidden"), 350);
+  loader.classList.add("is-hidden");
+  window.setTimeout(() => { loader.hidden = true; }, 550);
 }
 
 document.addEventListener("click", (event) => {

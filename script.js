@@ -512,10 +512,8 @@ function brandMarkup(brand = state.data.brand || {}) {
 function updateSiteLoaderBrand() {
   if (!loaderMark) return;
   const brand = state.data.brand || {};
-  const name = brand.name || "Paska";
-  loaderMark.innerHTML = brand.logo
-    ? `<img src="${escapeHtml(brand.logo)}" alt="${escapeHtml(name || "Paska Otel logosu")}" decoding="async">`
-    : "";
+  const image = loaderMark.querySelector("img");
+  if (image) image.alt = `${brand.name || "Paska"} Otel logosu`;
 }
 
 function hideSiteLoader() {

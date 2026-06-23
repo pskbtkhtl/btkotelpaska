@@ -6,12 +6,15 @@
     <title>Odalar | Paska Otel Foca</title>
     <meta name="description" content="Paska Otel Foca odalarini, oda detaylarini ve fotograflarini inceleyin." />
     <meta name="theme-color" content="#f7f3ed" />
+    <link rel="preload" href="/assets/images/paska-logo.png" as="image" />
     <link rel="stylesheet" href="/styles.css?v=22" />
     <link rel="stylesheet" href="/odalar/odalar.css?v=1" />
   </head>
   <body class="rooms-page-body">
     <div class="rooms-page-loader" data-rooms-loader>
-      <div data-rooms-loader-brand></div>
+      <div data-rooms-loader-brand>
+        <img src="/assets/images/paska-logo.png" alt="Paska Otel logosu" fetchpriority="high" decoding="sync" />
+      </div>
       <span></span>
     </div>
 
@@ -45,6 +48,6 @@
     <div data-rooms-details></div>
 
     <script src="/config.js?v=1"></script>
-    <script src="/odalar/odalar.js?v=1" defer></script>
+    <script src="/odalar/odalar.js?v=2" defer></script>
   </body>
 </html>

@@ -19,12 +19,15 @@
     <meta property="og:url" content="http://localhost:8080/" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="assets/images/hero-aegean-escape.webp" />
+    <link rel="preload" href="/assets/images/paska-logo.png" as="image" />
     <link rel="preload" href="assets/images/hero-aegean-escape.webp" as="image" />
     <link rel="stylesheet" href="styles.css?v=22" />
   </head>
   <body>
     <div class="site-loader" data-site-loader aria-live="polite" aria-label="Paska Otel yÃ¼kleniyor">
-      <div class="site-loader__mark" data-loader-mark></div>
+      <div class="site-loader__mark" data-loader-mark>
+        <img src="/assets/images/paska-logo.png" alt="Paska Otel logosu" fetchpriority="high" decoding="sync" />
+      </div>
       <span class="site-loader__line" aria-hidden="true"></span>
     </div>
 
@@ -94,6 +97,6 @@
     </div>
 
     <script src="config.js?v=1"></script>
-    <script src="script.js?v=35" defer></script>
+    <script src="script.js?v=36" defer></script>
   </body>
 </html>
