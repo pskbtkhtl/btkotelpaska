@@ -2129,6 +2129,12 @@ textarea {
 
   .room-detail__panel {
     height: 100vh;
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
     border-radius: 0;
   }
 
@@ -2144,6 +2150,7 @@ textarea {
   .room-detail__content {
     gap: 10px;
     padding: 16px;
+    padding-bottom: max(32px, env(safe-area-inset-bottom));
   }
 
   .room-detail__content h2 {
