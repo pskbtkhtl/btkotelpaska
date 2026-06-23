@@ -603,8 +603,8 @@ h2 {
 .room-detail__panel {
   position: relative;
   width: min(1180px, 100%);
-  max-height: min(900px, calc(100vh - 28px));
-  overflow: auto;
+  height: min(900px, calc(100vh - 28px));
+  overflow: hidden;
   border-radius: 22px;
   background: var(--white);
   box-shadow: 0 30px 90px rgba(0, 0, 0, 0.24);
@@ -649,8 +649,8 @@ h2 {
 .room-detail__slide {
   position: relative;
   flex: 0 0 100%;
-  height: min(64vh, 620px);
-  min-height: 420px;
+  height: clamp(280px, 48vh, 520px);
+  min-height: 0;
   margin: 0;
   overflow: hidden;
   scroll-snap-align: start;
@@ -701,19 +701,20 @@ h2 {
 
 .room-detail__content {
   display: grid;
-  gap: 24px;
-  padding: clamp(24px, 4vw, 54px);
+  gap: 14px;
+  padding: clamp(18px, 3vw, 34px);
 }
 
 .room-detail__content h2 {
   max-width: 760px;
-  font-size: clamp(2.1rem, 4vw, 4.5rem);
+  font-size: clamp(2rem, 3.4vw, 3.7rem);
 }
 
 .room-detail__summary {
   max-width: 760px;
+  margin-bottom: 0;
   color: var(--gray);
-  font-size: clamp(1rem, 1.5vw, 1.2rem);
+  font-size: clamp(0.95rem, 1.3vw, 1.08rem);
 }
 
 .room-detail__facts,
@@ -725,7 +726,7 @@ h2 {
 
 .room-detail__facts span,
 .room-detail__amenities span {
-  padding: 10px 13px;
+  padding: 8px 11px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: rgba(238, 229, 215, 0.36);
@@ -1865,6 +1866,15 @@ textarea {
   background: #f8f5ee;
 }
 
+.upload-progress.is-optimizing {
+  border-color: rgba(203, 187, 165, 0.5);
+  background: #fbf5e9;
+}
+
+.upload-progress.is-optimizing .upload-progress__track span {
+  background: #b68a43;
+}
+
 .upload-progress.is-success {
   border-color: rgba(50, 119, 86, 0.28);
   background: #f0f7ef;
@@ -2118,8 +2128,7 @@ textarea {
   }
 
   .room-detail__panel {
-    min-height: 100vh;
-    max-height: 100vh;
+    height: 100vh;
     border-radius: 0;
   }
 
@@ -2128,8 +2137,28 @@ textarea {
   }
 
   .room-detail__slide {
-    height: 58vh;
-    min-height: 320px;
+    height: 42vh;
+    min-height: 0;
+  }
+
+  .room-detail__content {
+    gap: 10px;
+    padding: 16px;
+  }
+
+  .room-detail__content h2 {
+    font-size: clamp(1.8rem, 9vw, 2.8rem);
+  }
+
+  .room-detail__facts,
+  .room-detail__amenities {
+    gap: 6px;
+  }
+
+  .room-detail__facts span,
+  .room-detail__amenities span {
+    padding: 6px 9px;
+    font-size: 0.78rem;
   }
 
   .room-detail__arrow {

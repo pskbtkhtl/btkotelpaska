@@ -148,6 +148,7 @@ async function staticFile(req, res) {
   if (await api(req, res, url)) return;
   let requested = decodeURIComponent(url.pathname);
   if (requested === "/") requested = "/index.html";
+  if (requested.endsWith("/")) requested += "index.html";
   const filePath = path.normalize(path.join(ROOT, requested));
   if (!filePath.startsWith(ROOT)) return send(res, 403, "Forbidden");
 

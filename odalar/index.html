@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Odalar | Paska Otel Foca</title>
+    <meta name="description" content="Paska Otel Foca odalarini, oda detaylarini ve fotograflarini inceleyin." />
+    <meta name="theme-color" content="#f7f3ed" />
+    <link rel="stylesheet" href="/styles.css?v=22" />
+    <link rel="stylesheet" href="/odalar/odalar.css?v=1" />
+  </head>
+  <body class="rooms-page-body">
+    <div class="rooms-page-loader" data-rooms-loader>
+      <div data-rooms-loader-brand></div>
+      <span></span>
+    </div>
+
+    <header class="rooms-page-header">
+      <a class="brand rooms-page-brand" href="/" aria-label="Paska Otel ana sayfa" data-rooms-brand>
+        <span>Paska</span>
+        <small>Otel Foca</small>
+      </a>
+      <nav class="rooms-page-nav" aria-label="Ana menu">
+        <a href="/#story" data-i18n="experience">Deneyim</a>
+        <a class="is-active" href="/odalar/" data-i18n="rooms">Odalar</a>
+        <a href="/#gallery" data-i18n="gallery">Galeri</a>
+        <a href="/#contact" data-i18n="contact">Iletisim</a>
+      </nav>
+      <button class="lang-switch rooms-page-lang" type="button" data-rooms-lang>EN</button>
+    </header>
+
+    <main class="rooms-page-main">
+      <section class="rooms-page-intro">
+        <p class="eyebrow" data-i18n="eyebrow">Paska Otel Foca</p>
+        <h1 data-i18n="title">Size uygun odayi kesfedin.</h1>
+        <p data-i18n="intro">Foca'nin sakin ritmine acilan odalarimizi, detaylarini ve fotograflarini inceleyin.</p>
+      </section>
+      <section class="rooms-listing" aria-label="Paska Otel odalari">
+        <div class="rooms-listing-grid" data-rooms-list></div>
+      </section>
+    </main>
+
+    <footer class="footer rooms-page-footer" data-rooms-footer></footer>
+
+    <div data-rooms-details></div>
+
+    <script src="/config.js?v=1"></script>
+    <script src="/odalar/odalar.js?v=1" defer></script>
+  </body>
+</html>

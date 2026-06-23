@@ -38,6 +38,7 @@ const state = {
   media: [],
   rooms: [],
   removedRoomIds: [],
+  expandedRoomKeys: new Set(),
   upload: null,
   mediaPicker: null,
   mediaPickerLimit: 10,
@@ -103,6 +104,44 @@ const adminSections = [
 function t(value) {
   if (typeof value === "string") return value;
   return value?.[state.activeLang] || value?.tr || value?.en || "";
+}
+
+const windows1252Bytes = new Map([
+  [8364, 0x80], [8218, 0x82], [402, 0x83], [8222, 0x84], [8230, 0x85], [8224, 0x86], [8225, 0x87],
+  [710, 0x88], [8240, 0x89], [352, 0x8a], [8249, 0x8b], [338, 0x8c], [381, 0x8e], [8216, 0x91],
+  [8217, 0x92], [8220, 0x93], [8221, 0x94], [8226, 0x95], [8211, 0x96], [8212, 0x97], [732, 0x98],
+  [8482, 0x99], [353, 0x9a], [8250, 0x9b], [339, 0x9c], [382, 0x9e], [376, 0x9f],
+]);
+
+function decodeMojibakeOnce(text) {
+  if (typeof text !== "string" || !/[ÃÄÅÂ]/.test(text)) return text;
+  const bytes = [];
+  for (const character of text) {
+    const code = character.codePointAt(0);
+    const byte = code <= 255 ? code : windows1252Bytes.get(code);
+    if (byte === undefined) return text;
+    bytes.push(byte);
+  }
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(Uint8Array.from(bytes));
+  } catch {
+    return text;
+  }
+}
+
+function repairMojibake(value) {
+  if (typeof value === "string") {
+    let result = value;
+    for (let index = 0; index < 3; index += 1) {
+      const repaired = decodeMojibakeOnce(result);
+      if (repaired === result) break;
+      result = repaired;
+    }
+    return result;
+  }
+  if (Array.isArray(value)) return value.map(repairMojibake);
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, repairMojibake(item)]));
+  return value;
 }
 
 function slugify(value = "") {
@@ -186,14 +225,15 @@ function fallbackRoomsFromContent() {
 }
 
 function normalizeRoom(row, images = []) {
-  const roomImages = images
-    .filter((image) => image.room_id === row.id)
+  const cleanRow = repairMojibake(row);
+  const roomImages = repairMojibake(images)
+    .filter((image) => image.room_id === cleanRow.id)
     .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
-    .map((image) => ({ ...image, image_url: image.image_url || row.cover_image_url }));
-  if (!roomImages.length && row.cover_image_url) {
-    roomImages.push({ image_url: row.cover_image_url, alt: row.title, is_cover: true, sort_order: 0 });
+    .map((image) => ({ ...image, image_url: image.image_url || cleanRow.cover_image_url }));
+  if (!roomImages.length && cleanRow.cover_image_url) {
+    roomImages.push({ image_url: cleanRow.cover_image_url, alt: cleanRow.title, is_cover: true, sort_order: 0 });
   }
-  return { ...row, images: roomImages };
+  return { ...cleanRow, images: roomImages };
 }
 
 async function loadRoomsCatalog() {
@@ -326,6 +366,74 @@ function formatFileSize(bytes = 0) {
   const power = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
   const value = bytes / 1024 ** power;
   return `${value >= 10 || power === 0 ? Math.round(value) : value.toFixed(1)} ${units[power]}`;
+}
+
+function canvasBlob(canvas, type, quality) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Gorsel optimize edilemedi."))), type, quality);
+  });
+}
+
+async function decodeUploadImage(file) {
+  if ("createImageBitmap" in window) {
+    try {
+      return await createImageBitmap(file, { imageOrientation: "from-image" });
+    } catch {
+      // Fall through to the image element decoder.
+    }
+  }
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Gorsel tarayicida acilamadi."));
+    };
+    image.src = url;
+  });
+}
+
+async function optimizeImageForUpload(file) {
+  const supported = ["image/jpeg", "image/png", "image/webp"].includes(file.type);
+  const optimizeThreshold = 4 * 1024 * 1024;
+  const safeUploadSize = 9 * 1024 * 1024;
+  if (!supported || file.size < optimizeThreshold) return { file, optimized: false };
+
+  const image = await decodeUploadImage(file);
+  const sourceWidth = image.width || image.naturalWidth;
+  const sourceHeight = image.height || image.naturalHeight;
+  const maxDimension = 2560;
+  const scale = Math.min(1, maxDimension / Math.max(sourceWidth, sourceHeight));
+  const width = Math.max(1, Math.round(sourceWidth * scale));
+  const height = Math.max(1, Math.round(sourceHeight * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d", { alpha: file.type !== "image/jpeg" });
+  if (!context) throw new Error("Tarayici gorsel optimizasyonunu desteklemiyor.");
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = "high";
+  context.drawImage(image, 0, 0, width, height);
+  image.close?.();
+
+  const outputType = file.type === "image/png" || file.type === "image/webp" ? "image/webp" : "image/jpeg";
+  let quality = 0.84;
+  let blob = await canvasBlob(canvas, outputType, quality);
+  while (blob.size > safeUploadSize && quality > 0.56) {
+    quality -= 0.08;
+    blob = await canvasBlob(canvas, outputType, quality);
+  }
+  if (blob.size > safeUploadSize) throw new Error("Gorsel optimize edildikten sonra da 9 MB sinirinin altina indirilemedi.");
+  if (blob.size >= file.size && file.size <= safeUploadSize) return { file, optimized: false };
+
+  const baseName = file.name.replace(/\.[^.]+$/, "");
+  const extension = outputType === "image/webp" ? ".webp" : ".jpg";
+  const optimizedFile = new File([blob], `${baseName}${extension}`, { type: outputType, lastModified: file.lastModified });
+  return { file: optimizedFile, optimized: true, originalSize: file.size };
 }
 
 function clearUploadState() {
@@ -526,7 +634,7 @@ function renderNav() {
   const enabledIds = new Set(sortedSections().filter((section) => section.enabled).map((section) => section.id));
   navRoot.innerHTML = (state.data.nav || [])
     .filter((item) => enabledIds.has(item.id))
-    .map((item) => `<a href="#${item.id}">${escapeHtml(t(item.label))}</a>`)
+    .map((item) => `<a href="${item.id === "rooms" ? "/odalar/" : `#${item.id}`}">${escapeHtml(t(item.label))}</a>`)
     .join("");
   langToggle.textContent = state.activeLang === "tr" ? "EN" : "TR";
 }
@@ -632,7 +740,7 @@ function renderHero(section) {
         <h1>${escapeHtml(t(content.title))}</h1>
         <p>${escapeHtml(t(content.subtitle))}</p>
         <div class="hero__actions">
-          <a class="button button--light" href="#rooms">${escapeHtml(t(content.primaryButton))}</a>
+          <a class="button button--light" href="/odalar/">${escapeHtml(t(content.primaryButton))}</a>
           <a class="button button--ghost" href="#contact">${escapeHtml(t(content.secondaryButton))}</a>
         </div>
       </div>
@@ -1433,8 +1541,11 @@ function renderRoomsAdminPro() {
         <button class="button button--dark" type="button" data-add-room>Oda ekle</button>
       </div>
       ${(state.rooms || [])
-        .map((room, index) => `
-          <div class="admin-row room-admin-card">
+        .map((room, index) => {
+          const roomKey = String(room.id || room.slug || index);
+          const expanded = state.expandedRoomKeys.has(roomKey);
+          return `
+          <div class="admin-row room-admin-card ${expanded ? "is-expanded" : ""}">
             <div class="admin-row__header">
               <div class="room-admin-heading">
                 <div class="room-admin-thumb">${roomCover(room) ? adminImage(roomCover(room), t(room.title), 180, 140) : `<span>Oda</span>`}</div>
@@ -1445,12 +1556,13 @@ function renderRoomsAdminPro() {
                 </div>
               </div>
               <div class="admin-actions">
+                <button class="button button--dark" type="button" data-toggle-room-editor="${escapeHtml(roomKey)}" aria-expanded="${expanded}">${expanded ? "Kapat" : "Duzenle"}</button>
                 <button class="button button--muted" type="button" data-move-room="${index}" data-dir="-1">Yukari</button>
                 <button class="button button--muted" type="button" data-move-room="${index}" data-dir="1">Asagi</button>
                 <button class="button button--muted" type="button" data-remove-room="${index}">Sil</button>
               </div>
             </div>
-            <div class="room-admin-layout">
+            <div class="room-admin-layout" ${expanded ? "" : "hidden"}>
               <div class="room-admin-block">
                 <h4>Temel bilgiler</h4>
                 <div class="admin-grid">
@@ -1483,7 +1595,8 @@ function renderRoomsAdminPro() {
               ${roomAmenitiesEditor(room, index)}
             </div>
           </div>
-        `)
+        `;
+        })
         .join("")}
     </div>
   `;
@@ -1526,7 +1639,7 @@ function renderGalleryAdmin() {
 function renderUploadPanel() {
   if (!state.upload) return "";
   const uploads = Array.isArray(state.upload) ? state.upload : [state.upload];
-  const isBusy = uploads.some((item) => item.phase === "uploading" || item.phase === "queued");
+  const isBusy = uploads.some((item) => item.phase === "optimizing" || item.phase === "uploading" || item.phase === "queued");
 
   return `
     <div class="upload-stack" role="status" aria-live="polite">
@@ -1568,7 +1681,7 @@ function renderUploadPanel() {
 
 function renderMediaAdmin() {
   const uploads = Array.isArray(state.upload) ? state.upload : [state.upload].filter(Boolean);
-  const isUploading = uploads.some((item) => item.phase === "uploading" || item.phase === "queued");
+  const isUploading = uploads.some((item) => item.phase === "optimizing" || item.phase === "uploading" || item.phase === "queued");
   return `
     <div class="admin-card">
       <div class="admin-row__header">
@@ -1822,26 +1935,42 @@ async function uploadMediaFiles(files) {
   state.upload = imageFiles.map((file, index) => ({
     id: `${Date.now()}-${index}-${file.name}`,
     name: file.name,
+    originalSize: file.size,
     size: file.size,
     preview: URL.createObjectURL(file),
     progress: 0,
-    phase: index === 0 ? "uploading" : "queued",
+    phase: index === 0 ? "optimizing" : "queued",
     status: index === 0 ? "Supabase Storage bağlantısı hazırlanıyor..." : "Yükleme sırasında bekliyor...",
   }));
+  state.upload.forEach((item, index) => {
+    item.status = index === 0 ? "Gorsel optimize ediliyor..." : "Optimizasyon sirasinda bekliyor...";
+  });
   renderAdmin();
 
   let successCount = 0;
   for (const [index, file] of imageFiles.entries()) {
     const item = state.upload[index];
-    const objectPath = safeUploadName(file.name);
-    item.phase = "uploading";
+    let uploadFile = file;
+    item.phase = "optimizing";
     item.status = "Supabase Storage'a yükleniyor...";
-    item.progress = Math.max(1, item.progress || 0);
+    item.progress = 5;
+    item.status = "Gorsel boyutu ve kalitesi optimize ediliyor...";
     renderAdmin();
 
     try {
-      await uploadToStorageWithProgress(file, objectPath, (progress) => {
-        item.progress = progress;
+      const optimized = await optimizeImageForUpload(file);
+      uploadFile = optimized.file;
+      item.size = uploadFile.size;
+      item.progress = 15;
+      item.phase = "uploading";
+      item.status = optimized.optimized
+        ? `Optimize edildi: ${formatFileSize(file.size)} → ${formatFileSize(uploadFile.size)}. Supabase'e yukleniyor...`
+        : `Optimizasyon gerekmiyor (${formatFileSize(uploadFile.size)}). Supabase'e yukleniyor...`;
+      renderAdmin();
+
+      const objectPath = safeUploadName(uploadFile.name);
+      await uploadToStorageWithProgress(uploadFile, objectPath, (progress) => {
+        item.progress = Math.min(100, 15 + Math.round(progress * 0.85));
         item.phase = "uploading";
         item.status = progress >= 100 ? "Yükleme tamamlandı, medya kütüphanesi yenilenecek..." : "Supabase Storage'a yükleniyor...";
         renderAdmin();
@@ -1901,7 +2030,6 @@ adminContent.addEventListener("input", (event) => {
   const roomPath = event.target.dataset.roomPath;
   if (roomPath) {
     setRoomValue(roomPath, normalizeValue(event.target.value));
-    renderSite();
     return;
   }
   const path = event.target.dataset.path;
@@ -1918,8 +2046,6 @@ adminContent.addEventListener(
     const roomPath = event.target.dataset.roomPath;
     if (roomPath && event.target.matches("input,textarea")) {
       setRoomValue(roomPath, normalizeValue(event.target.value));
-      renderSite();
-      renderAdmin();
       return;
     }
     const path = event.target.dataset.path;
@@ -1933,9 +2059,16 @@ adminContent.addEventListener(
 
 adminContent.addEventListener("click", async (event) => {
   const target = event.target.closest(
-    "[data-open-media-picker], [data-close-media-picker], [data-pick-media], [data-clear-upload], [data-color-preset], [data-add-room], [data-add-gallery], [data-add-story], [data-remove-story], [data-move-story], [data-copy-media], [data-delete-media], [data-remove-room], [data-remove-gallery], [data-move-room], [data-move-gallery], [data-move-section], [data-add-room-image], [data-remove-room-image], [data-move-room-image], [data-set-room-cover], [data-toggle-room-amenity], [data-add-custom-amenity], [data-remove-room-amenity]"
+    "[data-open-media-picker], [data-close-media-picker], [data-pick-media], [data-clear-upload], [data-color-preset], [data-add-room], [data-add-gallery], [data-add-story], [data-remove-story], [data-move-story], [data-copy-media], [data-delete-media], [data-remove-room], [data-remove-gallery], [data-move-room], [data-move-gallery], [data-move-section], [data-add-room-image], [data-remove-room-image], [data-move-room-image], [data-set-room-cover], [data-toggle-room-amenity], [data-add-custom-amenity], [data-remove-room-amenity], [data-toggle-room-editor]"
   );
   if (!target || !adminContent.contains(target)) return;
+  if (target.dataset.toggleRoomEditor !== undefined) {
+    const key = String(target.dataset.toggleRoomEditor);
+    if (state.expandedRoomKeys.has(key)) state.expandedRoomKeys.delete(key);
+    else state.expandedRoomKeys.add(key);
+    renderAdmin();
+    return;
+  }
   if (target.dataset.openMediaPicker !== undefined) {
     const label = target.closest(".media-choice")?.querySelector(".admin-field-label")?.textContent || "Görsel seç";
     state.mediaPicker = target.dataset.roomMediaPath ? { roomPath: target.dataset.roomMediaPath, label } : { path: target.dataset.path, label };
@@ -1979,7 +2112,7 @@ adminContent.addEventListener("click", async (event) => {
     return;
   }
   if (target.dataset.addRoom !== undefined) {
-    const image = state.media[0]?.path || "";
+    const image = "";
     const next = state.rooms.length + 1;
     state.rooms.push({
       id: `local-${Date.now()}`,
@@ -1995,6 +2128,15 @@ adminContent.addEventListener("click", async (event) => {
       status: "published",
       sort_order: next * 10,
     });
+    const newRoom = state.rooms.at(-1);
+    newRoom.short_description = { tr: "K\u0131sa a\u00e7\u0131klama.", en: "Short description." };
+    newRoom.description = { tr: "Oda detay a\u00e7\u0131klamas\u0131.", en: "Room detail description." };
+    newRoom.location_label = { tr: "Fo\u00e7a b\u00f6lgesinde oda", en: "Room in Foca" };
+    newRoom.details = { guests: 2, beds: "1 Adet \u00c7ift Ki\u015filik Yatak", bath: "\u00d6zel banyo" };
+    newRoom.amenities = [];
+    newRoom.cover_image_url = "";
+    newRoom.images = [];
+    state.expandedRoomKeys.add(String(state.rooms.at(-1).id));
     renderSite();
     renderAdmin();
     return;
@@ -2126,7 +2268,12 @@ adminContent.addEventListener("click", async (event) => {
     return;
   }
   if (target.dataset.removeRoom !== undefined) {
-    const removed = state.rooms.splice(Number(target.dataset.removeRoom), 1)[0];
+    const roomIndex = Number(target.dataset.removeRoom);
+    const room = state.rooms[roomIndex];
+    const roomName = t(room?.title) || `Oda ${roomIndex + 1}`;
+    if (!window.confirm(`"${roomName}" odasini silmek istediginize emin misiniz? Bu islem Kaydet butonuna bastiginizda Supabase'e yansir.`)) return;
+    const removed = state.rooms.splice(roomIndex, 1)[0];
+    state.expandedRoomKeys.delete(String(removed?.id || removed?.slug || roomIndex));
     if (removed?.id && !String(removed.id).startsWith("local-") && !String(removed.id).startsWith("fallback-")) state.removedRoomIds.push(removed.id);
   }
   if (target.dataset.removeGallery !== undefined) state.data.sections.find((section) => section.type === "gallery").items.splice(Number(target.dataset.removeGallery), 1);
@@ -2188,7 +2335,7 @@ adminContent.addEventListener("drop", async (event) => {
   dropzone.classList.remove("is-dragover");
   const files = event.dataTransfer?.files;
   const uploads = Array.isArray(state.upload) ? state.upload : [state.upload].filter(Boolean);
-  if (!files?.length || uploads.some((item) => item.phase === "uploading" || item.phase === "queued")) return;
+  if (!files?.length || uploads.some((item) => item.phase === "optimizing" || item.phase === "uploading" || item.phase === "queued")) return;
   try {
     await uploadMediaFiles(files);
   } catch (error) {
@@ -2355,7 +2502,7 @@ window.addEventListener("scroll", () => {
 });
 
 document.addEventListener("keydown", (event) => {
-  if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "a") {
+  if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "z") {
     event.preventDefault();
     openAdmin();
   }
